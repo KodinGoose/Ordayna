@@ -1,7 +1,7 @@
 -- This allows us to replace the database without encountering foreign key errors
 SET FOREIGN_KEY_CHECKS = 0;
 
-CREATE OR REPLACE DATABASE foadatbazis;
+CREATE OR REPLACE DATABASE foadatbazis CHARACTER SET = "utf8mb4" COLLATE = "utf8mb4_uca1400_ai_ci";
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -9,7 +9,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 CREATE OR REPLACE TABLE foadatbazis.intezmeny_ids ( 
 	id                   INT UNSIGNED   NOT NULL AUTO_INCREMENT  PRIMARY KEY,
 	intezmeny_id         INT UNSIGNED   NOT NULL   
- ) engine=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+ ) ENGINE = InnoDB;
 
 DELIMITER //
 CREATE OR REPLACE PROCEDURE foadatbazis.detach_intezmeny(
@@ -27,13 +27,12 @@ CREATE OR REPLACE TABLE foadatbazis.users (
 	display_name         VARCHAR(200)   NOT NULL,
 	email                VARCHAR(254)   UNIQUE NOT NULL,
 	phone_number         VARCHAR(15),
-	password_hash        BINARY(60)     NOT NULL,
-	CONSTRAINT users_email UNIQUE ( email ) 
- ) engine=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+	password_hash        BINARY(60)     NOT NULL
+ ) ENGINE = InnoDB;
 
 CREATE OR REPLACE TABLE foadatbazis.intezmeny_ids_users ( 
 	intezmeny_ids_id     INT UNSIGNED   NOT NULL   ,
 	users_id             INT UNSIGNED   NOT NULL   ,
 	CONSTRAINT fk_intezmeny_ids_users FOREIGN KEY ( intezmeny_ids_id ) REFERENCES foadatbazis.intezmeny_ids( id ) ON DELETE CASCADE ON UPDATE NO ACTION,
 	CONSTRAINT fk_intezmeny_ids_users_users FOREIGN KEY ( users_id ) REFERENCES foadatbazis.users( id ) ON DELETE CASCADE ON UPDATE NO ACTION
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+ ) ENGINE = InnoDB;
