@@ -33,11 +33,13 @@ CREATE OR REPLACE TABLE intezmeny.room (
 	space                INT UNSIGNED NOT NULL
  ) ENGINE=InnoDB;
 
+-- TODO: connect teacher with lesson via a connecting table
+
 CREATE OR REPLACE TABLE intezmeny.teacher ( 
 	id                   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	name                 VARCHAR(200) UNIQUE NOT NULL,
 	job                  VARCHAR(200) NOT NULL,
-	subjects_undertaken  VARCHAR(400), --TODO: connect teacher with lesson via a connecting table
+	subjects_undertaken  VARCHAR(400),
 	email                VARCHAR(254),
 	phone_number         VARCHAR(15)       
  ) ENGINE=InnoDB;
@@ -109,13 +111,17 @@ CREATE OR REPLACE TABLE intezmeny.homework_attachments (
 	CONSTRAINT fk_join_attachment FOREIGN KEY ( attachments_id ) REFERENCES intezmeny.attachments( id ) ON DELETE CASCADE ON UPDATE NO ACTION
 );
 
+
+-- TODO: same thing here as the teacher table
+
+
 delimiter //
 
 create procedure newTeacher
 (
 in in_name VARCHAR(200),
 in in_job VARCHAR(200),
-in in_subjects_undertaken VARCHAR(200), --TODO: same thing here
+in in_subjects_undertaken VARCHAR(200),
 in in_email VARCHAR(254),
 in in_phone_number VARCHAR(15)
 )
@@ -130,3 +136,4 @@ VALUES
 END//
 
 delimiter ;
+
