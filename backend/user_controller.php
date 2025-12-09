@@ -23,9 +23,9 @@ class UserController
     public function createUser(): CreateUserRet
     {
         $data = json_decode(file_get_contents("php://input"));
-
         if (
-            !isset($data->disp_name) or !is_string($data->disp_name) or !isset($data->email) or !is_string($data->email) or
+            !isset($data->disp_name) or !is_string($data->disp_name) or
+            !isset($data->email) or !is_string($data->email) or !preg_match('/^[^@]+[@]+[^@]+$/', $data->email) or
             !isset($data->pass_hash) or !is_string($data->pass_hash) or strlen($data->pass_hash) != 60
         ) {
             return CreateUserRet::bad_request;
@@ -58,7 +58,8 @@ class UserController
 
         $main_db = new MainDb();
 
-        if (!isset($data->email) or !isset($data->pass_hash) or !is_string($data->email) or !is_string($data->pass_hash) or strlen($data->pass_hash) != 60) {
+        if (!isset($data->email) or !is_string($data->email) or !preg_match('/^[^@]+[@]+[^@]+$/', $data->email) or
+            !isset($data->pass_hash) or !is_string($data->pass_hash) or strlen($data->pass_hash) != 60) {
             return DeleteUserRet::bad_request;
         }
 
@@ -86,7 +87,8 @@ class UserController
         $main_db = new MainDb();
 
         if (
-            !isset($data->email) or !is_string($data->email) or !isset($data->new_disp_name) or !is_string($data->new_disp_name) or
+            !isset($data->email) or !is_string($data->email) or !preg_match('/^[^@]+[@]+[^@]+$/', $data->email) or
+            !isset($data->new_disp_name) or !is_string($data->new_disp_name) or
             !isset($data->pass_hash) or !is_string($data->pass_hash) or strlen($data->pass_hash) != 60
         ) {
             return ChangeUserRet::bad_request;
@@ -116,8 +118,9 @@ class UserController
         $main_db = new MainDb();
 
         if (
-            !isset($data->email) or !is_string($data->email) or !isset($data->new_phone_number) or
-            !is_string($data->new_phone_number) or strlen($data->new_phone_number) > 15 or !is_numeric($data->new_phone_number) or
+            !isset($data->email) or !is_string($data->email) or !preg_match('/^[^@]+[@]+[^@]+$/', $data->email) or
+            !isset($data->new_phone_number) or !is_string($data->new_phone_number) or
+            strlen($data->new_phone_number) > 15 or !is_numeric($data->new_phone_number) or
             !isset($data->pass_hash) or !is_string($data->pass_hash) or strlen($data->pass_hash) != 60
         ) {
             return ChangeUserRet::bad_request;
@@ -147,7 +150,7 @@ class UserController
         $main_db = new MainDb();
 
         if (
-            !isset($data->email) or !is_string($data->email) or 
+            !isset($data->email) or !is_string($data->email) or !preg_match('/^[^@]+[@]+[^@]+$/', $data->email) or 
             !isset($data->new_pass_hash) or !is_string($data->new_pass_hash) or strlen($data->new_pass_hash) != 60 or
             !isset($data->pass_hash) or !is_string($data->pass_hash) or strlen($data->pass_hash) != 60
         ) {
