@@ -123,7 +123,7 @@ CREATE OR REPLACE TABLE intezmeny.homework_attachments (
 
 delimiter //
 
-create procedure newTeacher
+create procedure intezmeny.newTeacher
 (
 in in_name VARCHAR(200),
 in in_job VARCHAR(200),
