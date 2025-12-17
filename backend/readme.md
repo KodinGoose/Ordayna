@@ -1,1 +1,1 @@
-To run the backend server run deps.sh to install dependancies
+Run deps.sh to install the dependancies required to run the backend with the php built in server
