@@ -207,14 +207,14 @@ class MainDb
     /**
      * Returns true on success and false on error
      */
-    function newInvalidRefreshToken(string $uuid): bool
+    function newInvalidRefreshToken(string $uuid, string $expires_after): bool
     {
         try {
             return $this->connection->execute_query(
                 '
-                    INSERT INTO revoked_refresh_tokens (uuid) VALUE (?);
+                    INSERT INTO revoked_refresh_tokens (uuid, duration) VALUE (?, ?);
                 ',
-                array($uuid)
+                array($uuid, $expires_after)
             );
         } catch (Exception $e) {
             return false;

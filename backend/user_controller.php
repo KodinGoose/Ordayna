@@ -98,9 +98,11 @@ class UserController
         $user_id = $token->claims()->get("uid");
         $new_token = $this->jwt->createRefreshToken($user_id);
 
-        $main_db->newInvalidRefreshToken($token->claims()->get(RegisteredClaims::ID));
+        // Expires after 15 days
+        $main_db->newInvalidRefreshToken($token->claims()->get(RegisteredClaims::ID), '15 0:0:0');
 
         $arr_cookie_options = array(
+            // 15 days
             'expires' => time() + 60 * 60 * 24 * 15,
             'path' => '/token/',
             'domain' => '',

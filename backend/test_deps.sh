@@ -8,3 +8,6 @@ sudo apt-get install composer -y
 
 composer require lcobucci/jwt
 composer require lcobucci/clock
+
+rm secret.key || true
+echo "tester keylengthlengthlengthlengthlengthlengthlengthlengthlengthlengthlengthlengthlength" > secret.key
