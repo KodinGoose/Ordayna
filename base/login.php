@@ -8,3 +8,4 @@
     <label for="login_pass">Jelszó</label><br>
     <input type="password" id="login_pass"><br>
 </form></div>
+<button onclick="location.href='profile.php'" id="user_button">Felhasználó</button>

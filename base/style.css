@@ -1,5 +1,7 @@
+*{font-family: sans-serif, Arial, Helvetica, sans-serif ;  }
 body{
-    background-color: ivory;
+    background-color: ivory; 
+    padding: 0px;
     
 }
 #center_align {
@@ -9,10 +11,60 @@ body{
     h1{text-align: center;}
 }
 #center_align_home {
-    width: 400px;
+    width: 300px;
     margin: 0 auto;
     margin-top: 5%;
-    border:2px black solid
-    button{width: 20px; height:20px;}
+}
+#homework_button, #create_button, #display_button{height: 95px; width:  95px; }
+h1{text-align: center;}
+
+#home_button{
+    margin: 10px;
+    position: fixed;
+    bottom: 0px;
+    right: 0px; 
+}
+
+#user_button{
+    margin: 10px;
+    position: fixed;
+    top: 0px;
+    right: 0px; 
+}
+
+.nav{
+    min-height: 100%;
+    width: 100px;
+    background-color: gray;
+    padding: 5px;
+    margin: 0px;
+    position: fixed;
+    top:0px;
+    left: 0px;
+    display: inline-block;
+}
+.profile{
+    border: 2px indigo solid;
+    display: inline-block;
+    position: relative;
+    width: max-content;
+    margin-left: 10px;
+    left:100px;
+    top:0px;
+    #prof_pic{
+        border: 2px black solid;
+        border-radius: 50%;
+        height: 150px;
+        width: 150px;
+    }
+}
+
+table{
+    width: 100%;
+    #pic{text-align: center;}
+}
+table,td,tr{
+    text-align: left; 
     
+    /*border: 3px greenyellow solid;*/
 }
