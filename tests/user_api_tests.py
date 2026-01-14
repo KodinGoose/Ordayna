@@ -513,3 +513,53 @@ test_count += 1
 print(f"{test_count:>4} Delete no phone number user: ", end="")
 response = requests.request("DELETE", URL + "/delete_user", cookies=no_phone_access_jar)
 handleApiError(response, 204, "")
+
+
+print("\n" + "-"*30+"\"Get endpoints\" tests"+"-"*30 + "\nTODO: Rewrite these once all the necessary endpoints are implemented\n")
+
+
+test_count += 1
+print(f"{test_count:>4} Get refresh token: ", end="")
+payload = {
+    "email": "asd@asd.com",
+    "pass": "tester_pass"
+}
+response = requests.request("POST", URL + "/token/get_refresh_token", json=payload)
+handleApiError(response, 200, "")
+refresh_jar = response.cookies
+
+test_count += 1
+print(f"{test_count:>4} Get access token: ", end="")
+response = requests.request("POST", URL + "/token/get_access_token", cookies=refresh_jar)
+handleApiError(response, 200, "")
+access_jar = response.cookies
+
+test_count += 1
+payload = {
+    "intezmeny_name": "tester_intezmeny"
+}
+print(f"{test_count:>4} Create intezmeny: ", end="")
+response = requests.request("POST", URL + "/create_intezmeny", json=payload, cookies=access_jar)
+handleApiError(response, 201, "")
+
+test_count += 1
+print(f"{test_count:>4} Get intezmenys: ", end="")
+response = requests.request("GET", URL + "/get_intezmenys", cookies=access_jar)
+intezmeny_id = response.json()[0][0]
+handleApiError(response, 200, f"[[{intezmeny_id},\"tester_intezmeny\"]]")
+
+test_count += 1
+payload = {
+    "intezmeny_id": f"{intezmeny_id}"
+}
+print(f"{test_count:>4} tmp test: ", end="")
+response = requests.request("POST", URL + "/get_classes", json=payload, cookies=access_jar)
+handleApiError(response, 200, "[]")
+
+test_count += 1
+payload = {
+    "intezmeny_id": f"{intezmeny_id}"
+}
+print(f"{test_count:>4} Delete intezmeny: ", end="")
+response = requests.request("DELETE", URL + "/delete_intezmeny", json=payload, cookies=access_jar)
+handleApiError(response, 204, "")
