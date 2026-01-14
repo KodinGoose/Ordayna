@@ -1,0 +1,18 @@
+body{
+    background-color: ivory;
+    
+}
+#center_align {
+    width: 170px;
+    margin: 0 auto;
+    margin-top: 5%;
+    h1{text-align: center;}
+}
+#center_align_home {
+    width: 400px;
+    margin: 0 auto;
+    margin-top: 5%;
+    border:2px black solid
+    button{width: 20px; height:20px;}
+    
+}
