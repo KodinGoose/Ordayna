@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 require 'vendor/autoload.php';
 
-include "user_controller.php";
+include "controller.php";
 $user_controller = new UserController();
 
 $req_uri = explode("/", explode("?", $_SERVER["REQUEST_URI"])[0]);
@@ -118,6 +118,34 @@ switch ($req_uri[1]) {
             break;
         }
         handleReturn($user_controller->changePassword());
+        break;
+    case "create_intezmeny":
+        if ($_SERVER["REQUEST_METHOD"] != "POST") {
+            http_response_code(405);
+            break;
+        }
+        handleReturn($user_controller->createIntezmeny());
+        break;
+    case "delete_intezmeny":
+        if ($_SERVER["REQUEST_METHOD"] != "DELETE") {
+            http_response_code(405);
+            break;
+        }
+        handleReturn($user_controller->deleteIntezmeny());
+        break;
+    case "get_intezmenys":
+        if ($_SERVER["REQUEST_METHOD"] != "GET") {
+            http_response_code(405);
+            break;
+        }
+        handleReturn($user_controller->getIntezmenys());
+        break;
+    case "get_classes":
+        if ($_SERVER["REQUEST_METHOD"] != "POST") {
+            http_response_code(405);
+            break;
+        }
+        handleReturn($user_controller->getClasses());
         break;
     default:
         http_response_code(404);
