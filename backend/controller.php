@@ -277,7 +277,133 @@ class UserController
 
     public function getClasses(): ControllerRet
     {
+        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        if (is_a($ret, "ControllerRet")) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        $ret = $db->getClasses($intezmeny_id);
+        if (!$ret) return ControllerRet::unexpected_error;
+
+        header('Content-Type: application/json');
+        echo json_encode($ret->fetch_all());
+
+        return ControllerRet::success;
+    }
+
+    public function getGroups(): ControllerRet
+    {
+        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        if (is_a($ret, "ControllerRet")) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        $ret = $db->getGroups($intezmeny_id);
+        if (!$ret) return ControllerRet::unexpected_error;
+
+        header('Content-Type: application/json');
+        echo json_encode($ret->fetch_all());
+
+        return ControllerRet::success;
+    }
+
+    public function getLessons(): ControllerRet
+    {
+        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        if (is_a($ret, "ControllerRet")) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        $ret = $db->getLessons($intezmeny_id);
+        if (!$ret) return ControllerRet::unexpected_error;
+
+        header('Content-Type: application/json');
+        echo json_encode($ret->fetch_all());
+
+        return ControllerRet::success;
+    }
+
+    public function getRooms(): ControllerRet
+    {
+        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        if (is_a($ret, "ControllerRet")) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        $ret = $db->getRooms($intezmeny_id);
+        if (!$ret) return ControllerRet::unexpected_error;
+
+        header('Content-Type: application/json');
+        echo json_encode($ret->fetch_all());
+
+        return ControllerRet::success;
+    }
+
+    public function getTeachers(): ControllerRet
+    {
+        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        if (is_a($ret, "ControllerRet")) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        $ret = $db->getTeachers($intezmeny_id);
+        if (!$ret) return ControllerRet::unexpected_error;
+
+        header('Content-Type: application/json');
+        echo json_encode($ret->fetch_all());
+
+        return ControllerRet::success;
+    }
+
+    public function getTimetable(): ControllerRet
+    {
+        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        if (is_a($ret, "ControllerRet")) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        $ret = $db->getTimetable($intezmeny_id);
+        if (!$ret) return ControllerRet::unexpected_error;
+
+        header('Content-Type: application/json');
+        echo json_encode($ret->fetch_all());
+
+        return ControllerRet::success;
+    }
+
+    public function getHomeworks(): ControllerRet
+    {
+        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        if (is_a($ret, "ControllerRet")) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        $ret = $db->getHomeworks($intezmeny_id);
+        if (!$ret) return ControllerRet::unexpected_error;
+
+        header('Content-Type: application/json');
+        echo json_encode($ret->fetch_all());
+
+        return ControllerRet::success;
+    }
+
+    public function getAttachments(): ControllerRet
+    {
         $data = json_decode(file_get_contents("php://input"));
+        $homework_id = $this->validateInteger(@$data->homework_id);
+        if ($homework_id === null) return ControllerRet::bad_request;
+        $ret = $this->validateGetIntezmenyData($data);
+        if (is_a($ret, "ControllerRet")) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        if (!$db->homeworkExists($intezmeny_id, $homework_id)) return ControllerRet::bad_request;
+
+        $ret = $db->getHomeworks($intezmeny_id);
+        if (!$ret) return ControllerRet::unexpected_error;
+
+        header('Content-Type: application/json');
+        echo json_encode($ret->fetch_all());
+
+        return ControllerRet::success;
+    }
+
+    /**
+    * Returns the database connection and the intezmeny's id
+    */
+    private function validateGetIntezmenyData(mixed $data): ControllerRet|array  {
         $intezmeny_id = $this->validateInteger(@$data->intezmeny_id);
         if ($intezmeny_id === null) return ControllerRet::bad_request;
 
@@ -286,26 +412,14 @@ class UserController
 
         $db = new DB();
 
-        if (!$db->userExistsViaId($token->claims()->get("uid"))) {
-            return ControllerRet::user_does_not_exist;
-        }
+        if (!$db->userExistsViaId($token->claims()->get("uid"))) return ControllerRet::user_does_not_exist;
 
-        if (!$db->partOfIntezmeny($token->claims()->get("uid"), $intezmeny_id)) {
-            return ControllerRet::unauthorised;
-        }
+        if (!$db->partOfIntezmeny($token->claims()->get("uid"), $intezmeny_id)) return ControllerRet::unauthorised;
 
-        $ret = $db->getClasses($intezmeny_id);
-        if (!$ret) {
-            return ControllerRet::unexpected_error;
-        }
-
-        header('Content-Type: application/json');
-        echo json_encode($ret->fetch_all());
-
-        return ControllerRet::success;
+        return array($db, $intezmeny_id);
     }
 
-    function validateRefreshToken(DB $db): ControllerRet|UnencryptedToken
+    private function validateRefreshToken(DB $db): ControllerRet|UnencryptedToken
     {
         if (!isset($_COOKIE["RefreshToken"]) or !is_string($_COOKIE["RefreshToken"])) return ControllerRet::bad_request;
 
@@ -318,7 +432,7 @@ class UserController
         return $token;
     }
 
-    function validateAccessToken(): ControllerRet|UnencryptedToken
+    private function validateAccessToken(): ControllerRet|UnencryptedToken
     {
         if (!isset($_COOKIE["AccessToken"]) or !is_string($_COOKIE["AccessToken"])) return ControllerRet::bad_request;
 
@@ -332,7 +446,7 @@ class UserController
 
     // This function handles the case where $number is undefined
     // It's expected that $number is passed in with the "@" stfu operator
-    function validateInteger(mixed $number, int|null $max_digits = null): int|null
+    private function validateInteger(mixed $number, int|null $max_digits = null): int|null
     {
         if (!isset($number) or !is_string($number) or !is_numeric($number)) return null;
         if ($max_digits !== null and strlen($number) > $max_digits) return null;
@@ -343,7 +457,7 @@ class UserController
 
     // This function handles the case where $string is undefined
     // It's expected that $string is passed in with the "@" stfu operator
-    function validateString(mixed $string, int $min_chars = 1, int|null $max_chars = null): string|null
+    private function validateString(mixed $string, int $min_chars = 1, int|null $max_chars = null): string|null
     {
         if (!isset($string) or !is_string($string) or strlen($string) < $min_chars or ($max_chars !== null and strlen($string) > $max_chars)) return null;
         return (string) $string;
@@ -351,7 +465,7 @@ class UserController
 
     // This function handles the case where $email is undefined
     // It's expected that $email is passed in with the "@" stfu operator
-    function validateEmail(mixed $email): string|null
+    private function validateEmail(mixed $email): string|null
     {
         if (!isset($email) or !is_string($email) or !preg_match('/^[^@]+[@]+[^@]+$/', $email)) return null;
         return (string) $email;
