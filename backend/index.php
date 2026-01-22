@@ -147,6 +147,55 @@ switch ($req_uri[1]) {
         }
         handleReturn($user_controller->getClasses());
         break;
+    case "get_groups":
+        if ($_SERVER["REQUEST_METHOD"] != "POST") {
+            http_response_code(405);
+            break;
+        }
+        handleReturn($user_controller->getGroups());
+        break;
+    case "get_lessons":
+        if ($_SERVER["REQUEST_METHOD"] != "POST") {
+            http_response_code(405);
+            break;
+        }
+        handleReturn($user_controller->getLessons());
+        break;
+    case "get_rooms":
+        if ($_SERVER["REQUEST_METHOD"] != "POST") {
+            http_response_code(405);
+            break;
+        }
+        handleReturn($user_controller->getRooms());
+        break;
+    case "get_teachers":
+        if ($_SERVER["REQUEST_METHOD"] != "POST") {
+            http_response_code(405);
+            break;
+        }
+        handleReturn($user_controller->getTeachers());
+        break;
+    case "get_timetable":
+        if ($_SERVER["REQUEST_METHOD"] != "POST") {
+            http_response_code(405);
+            break;
+        }
+        handleReturn($user_controller->getTimetable());
+        break;
+    case "get_homeworks":
+        if ($_SERVER["REQUEST_METHOD"] != "POST") {
+            http_response_code(405);
+            break;
+        }
+        handleReturn($user_controller->getHomeworks());
+        break;
+    case "get_attachments":
+        if ($_SERVER["REQUEST_METHOD"] != "POST") {
+            http_response_code(405);
+            break;
+        }
+        handleReturn($user_controller->getAttachments());
+        break;
     default:
         http_response_code(404);
         break;
