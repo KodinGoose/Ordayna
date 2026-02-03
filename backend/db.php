@@ -8,7 +8,8 @@ class DB
 
     public function __construct()
     {
-        $databaseHost = 'localhost';
+        $databaseHost = file_get_contents("database_address");
+        if ($databaseHost === false) fwrite(STDOUT, "Failed to read \"database_address\" file\n");
         $databaseUsername = 'ordayna_main';
         $databasePassword = '';
         $databaseName = '';
