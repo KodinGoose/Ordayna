@@ -2,3 +2,5 @@ backend/composer.json
 backend/composer.lock
 backend/vendor
 backend/secret.key
+backend/user_data
+backend/database_address

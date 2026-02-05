@@ -24,6 +24,7 @@ sudo cp ../backend/* /var/www/ordayna/ -r
 orig_dir=$(pwd)
 cd /var/www/ordayna
 sudo composer require lcobucci/jwt lcobucci/clock
+printf "localhost" > "database_address"
 cd "$orig_dir"
 
 # Generate the random secret used for jwt hashing

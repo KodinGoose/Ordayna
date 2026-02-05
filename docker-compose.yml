@@ -1,0 +1,23 @@
+services:
+  database:
+    image: mariadb
+    # ports:
+      # - "3306:3306"
+    restart: always
+    environment:
+      # MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: true
+      MARIADB_RANDOM_ROOT_PASSWORD: true
+    volumes:
+      - ./db:/db
+      - "./config/docker_init.sql:/docker-entrypoint-initdb.d/ordayna_init.sql"
+
+  backend:
+    image: ordayna-backend
+    ports:
+      - "8000:8000"
+    restart: always
+    volumes:
+      - ./backend:/backend
+      - ./base:/base
+    depends_on:
+      - database

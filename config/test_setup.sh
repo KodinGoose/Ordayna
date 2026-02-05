@@ -5,14 +5,14 @@ sudo apt-get update
 
 sudo apt-get install mariadb-server -y
 sudo apt-get install php-mysql -y
-# 7zip or unzip is required for composer to work but neither is a dependancy for some reason
+# 7zip or unzip or git is required for composer to work but non of them are a dependancy for some reason
 sudo apt-get install 7zip -y
 sudo apt-get install composer -y
 
 orig_dir=$(pwd)
 cd ../backend
-composer require lcobucci/jwt
-composer require lcobucci/clock
+sudo composer require lcobucci/jwt lcobucci/clock
+printf "localhost" > "database_address"
 cd "$orig_dir"
 
 # Generate the random secret used for jwt hashing
