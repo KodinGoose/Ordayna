@@ -28,7 +28,7 @@ class DB
                 ',
                 array($email),
             )->fetch_all()[0][0];
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -44,7 +44,7 @@ class DB
                 ',
                 array($email),
             )->fetch_all()[0][0];
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -60,7 +60,7 @@ class DB
                 ',
                 array($email)
             )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -76,7 +76,7 @@ class DB
                 ',
                 array($uid)
             )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -96,7 +96,7 @@ class DB
                 ',
                 array($display_name, $email, $phone_number, $password_hash)
             );
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -116,7 +116,7 @@ class DB
                 ',
                 array($uid),
             );
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -136,7 +136,7 @@ class DB
                 ',
                 array($new_disp_name, $uid),
             );
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -156,7 +156,7 @@ class DB
                 ',
                 array($new_phone_number, $uid),
             );
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -176,7 +176,7 @@ class DB
                 ',
                 array($new_pass_hash, $uid),
             );
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -198,7 +198,7 @@ class DB
             }
 
             return $ret_arr;
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -217,7 +217,7 @@ class DB
                 ',
                 array($uuid, $expires_after)
             );
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -238,7 +238,7 @@ class DB
                 ',
                 array($uid, $intezmeny_id)
             )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -258,7 +258,7 @@ class DB
                 ',
                 array($uid)
             );
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -272,7 +272,7 @@ class DB
                 'SELECT EXISTS(SELECT * FROM class WHERE id = ?);',
                 array($class_id)
             )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -286,7 +286,7 @@ class DB
                 'SELECT EXISTS(SELECT * FROM class WHERE name = ?);',
                 array($class_name)
             )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -300,7 +300,7 @@ class DB
                 'SELECT EXISTS(SELECT * FROM lesson WHERE id = ?);',
                 array($lesson_id)
             )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -314,7 +314,21 @@ class DB
                 'SELECT EXISTS(SELECT * FROM lesson WHERE name = ?);',
                 array($lesson_name)
             )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
+        } catch (Exception) {
+            return false;
+        }
+    }
+
+    function groupExists(int $intezmeny_id, int $group_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM group_ WHERE id = ?);',
+                array($group_id)
+            )->fetch_all()[0][0] === 1;
+        } catch (Exception) {
             return false;
         }
     }
@@ -328,7 +342,21 @@ class DB
                 'SELECT EXISTS(SELECT * FROM group_ WHERE name = ?);',
                 array($group_name)
             )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
+        } catch (Exception) {
+            return false;
+        }
+    }
+
+    function roomExists(int $intezmeny_id, int $room_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM room WHERE id = ?);',
+                array($room_id)
+            )->fetch_all()[0][0] === 1;
+        } catch (Exception) {
             return false;
         }
     }
@@ -342,7 +370,7 @@ class DB
                 'SELECT EXISTS(SELECT * FROM room WHERE name = ?);',
                 array($room_name)
             )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -358,7 +386,23 @@ class DB
                 ',
                 array($teacher_id)
             )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
+        } catch (Exception) {
+            return false;
+        }
+    }
+
+    function timetableElementExists(int $intezmeny_id, int $timetable_element_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                '
+                    SELECT EXISTS(SELECT * FROM timetable WHERE id = ?)
+                ',
+                array($timetable_element_id)
+            )->fetch_all()[0][0] === 1;
+        } catch (Exception) {
             return false;
         }
     }
@@ -374,7 +418,7 @@ class DB
                 ',
                 array($homework_id)
             )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -390,7 +434,7 @@ class DB
                 ',
                 array($attachment_id)
             )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -404,7 +448,7 @@ class DB
                 'CALL newClass(?, ?);',
                 array($name, $headcount)
             );
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -418,7 +462,7 @@ class DB
                 'CALL newLesson(?);',
                 array($name)
             );
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -429,10 +473,10 @@ class DB
             $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
             if ($ret === false) return false;
             return $this->connection->execute_query(
-                'CALL newGroup_(?, ?, ?);',
+                'CALL newGroup(?, ?, ?);',
                 array($name, $headcount, $class_id)
             );
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -446,7 +490,7 @@ class DB
                 'CALL newRoom(?, ?, ?);',
                 array($name, $type, $space)
             );
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -460,7 +504,7 @@ class DB
                 'CALL newTeacher(?, ?, ?, ?);',
                 array($name, $job, $email, $phone_number)
             );
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -474,7 +518,7 @@ class DB
                 'CALL newTimetableElement(?, ?, ?, ?);',
                 array($duration, $day, $from, $until)
             );
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -488,7 +532,7 @@ class DB
                 'CALL newHomework(?, ?, ?);',
                 array($due, $lesson_id, $teacher_id)
             );
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -509,7 +553,119 @@ class DB
             $ret = $this->connection->query("SELECT LAST_INSERT_ID();");
             if ($ret === false) return false;
             return (int) $ret->fetch_all()[0][0];
-        } catch (Exception $e) {
+        } catch (Exception) {
+            return false;
+        }
+    }
+
+    function deleteClass(int $intezmeny_id, int $class_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'CALL delClass(?);',
+                array($class_id)
+            );
+        } catch (Exception) {
+            return false;
+        }
+    }
+
+    function deleteLesson(int $intezmeny_id, int $lesson_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'CALL delLesson(?);',
+                array($lesson_id)
+            );
+        } catch (Exception) {
+            return false;
+        }
+    }
+
+    function deleteGroup(int $intezmeny_id, int $group_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'CALL delGroup(?);',
+                array($group_id)
+            );
+        } catch (Exception) {
+            return false;
+        }
+    }
+
+    function deleteRoom(int $intezmeny_id, int $room_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'CALL delRoom(?);',
+                array($room_id)
+            );
+        } catch (Exception) {
+            return false;
+        }
+    }
+
+    function deleteTeacher(int $intezmeny_id, int $teacher_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'CALL delTeacher(?);',
+                array($teacher_id)
+            );
+        } catch (Exception) {
+            return false;
+        }
+    }
+
+    function deleteTimetableElement(int $intezmeny_id, int $timetable_element_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'CALL delTimetableElement(?);',
+                array($timetable_element_id)
+            );
+        } catch (Exception) {
+            return false;
+        }
+    }
+
+    function deleteHomework(int $intezmeny_id, int $homework_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'CALL delHomework(?);',
+                array($homework_id)
+            );
+        } catch (Exception) {
+            return false;
+        }
+    }
+
+    function deleteAttachment(int $intezmeny_id, int $attachment_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'CALL delAttachment(?);',
+                array($attachment_id)
+            );
+        } catch (Exception) {
             return false;
         }
     }
@@ -520,7 +676,7 @@ class DB
             $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
             if ($ret === false) return false;
             return $this->connection->query("SELECT id, name, headcount FROM class;");
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -536,7 +692,7 @@ class DB
                 LEFT JOIN class ON group_.class_id = class.id
                 ;
             ');
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -547,7 +703,7 @@ class DB
             $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
             if ($ret === false) return false;
             return $this->connection->query("SELECT id, name FROM lesson;");
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -558,7 +714,7 @@ class DB
             $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
             if ($ret === false) return false;
             return $this->connection->query("SELECT id, name, room_type, space FROM room;");
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -590,7 +746,7 @@ class DB
                 array_push($teachers[$i], $ret->fetch_all());
             }
             return $teachers;
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -601,7 +757,23 @@ class DB
             $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
             if ($ret === false) return false;
             return $this->connection->query("SELECT * FROM timetable;");
-        } catch (Exception $e) {
+        } catch (Exception) {
+            return false;
+        }
+    }
+
+    function getHomeworkAttachments(int $intezmeny_id, int $homework_id): array|false
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            $ret = $this->connection->execute_query(
+                'SELECT attachments.id, file_name FROM homework LEFT JOIN attachments on homework.id = homework_id WHERE homework.id = ?;',
+                array($homework_id)
+            );
+            if ($ret === false) return false;
+            return $ret->fetch_all();
+        } catch (Exception) {
             return false;
         }
     }
@@ -628,7 +800,7 @@ class DB
                 array_push($homeworks[$i], $ret->fetch_all());
             }
             return $homeworks;
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -642,7 +814,7 @@ class DB
                 "SELECT file_name FROM attachments WHERE id = ?;",
                 array($attachment_id)
             )->fetch_all()[0][0];
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -683,7 +855,7 @@ class DB
                 };
             }
             return true;
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -701,7 +873,7 @@ class DB
             );
             if ($ret == false) return false;
             return $this->connection->query("DROP DATABASE ordayna_intezmeny_" . $intezmeny_id);
-        } catch (Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -832,17 +1004,17 @@ class DB
             DELETE FROM class WHERE id=in_id;
         END;
 
-        CREATE OR REPLACE PROCEDURE newGroup_ ( IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED, IN in_class_id INT UNSIGNED )
+        CREATE OR REPLACE PROCEDURE newGroup ( IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED, IN in_class_id INT UNSIGNED )
         BEGIN
             INSERT INTO group_ (name, headcount, class_id) VALUES (in_name, in_headcount, in_class_id);
         END;
 
-        CREATE OR REPLACE PROCEDURE modGroup_ ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED, IN in_class_id INT UNSIGNED )
+        CREATE OR REPLACE PROCEDURE modGroup ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED, IN in_class_id INT UNSIGNED )
         BEGIN
             UPDATE group_ SET name=in_name, headcount=in_headcount, class_id=in_class_id WHERE in_id=id;
         END;
 
-        CREATE OR REPLACE PROCEDURE delGroup_ ( IN in_id INT UNSIGNED )
+        CREATE OR REPLACE PROCEDURE delGroup ( IN in_id INT UNSIGNED )
         BEGIN
             DELETE FROM group_ WHERE id=in_id;
         END;
@@ -932,7 +1104,7 @@ class DB
             UPDATE timetable SET duration=in_duration, day=in_day, from_=in_from, until=in_until, group_id=in_group_id, lesson_id=in_lesson_id, teacher_id=in_teacher_id, room_id=in_room_id WHERE in_id=id;
         END;
 
-        CREATE OR REPLACE PROCEDURE delTimetable ( IN in_id INT UNSIGNED )
+        CREATE OR REPLACE PROCEDURE delTimetableElement ( IN in_id INT UNSIGNED )
         BEGIN
             DELETE FROM timetable WHERE id=in_id;
         END;

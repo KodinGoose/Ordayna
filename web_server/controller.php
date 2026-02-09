@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 // TODO: Use argon2id instead of bcrypt
+// TODO: Rework session token revokation
 
 static $is_test_server = php_sapi_name() === "cli-server";
 /** 20 mebibytes */
@@ -42,6 +43,7 @@ class UserController
 
         $user_id = $db->getUserIdViaEmail($email);
         if ($user_id === false) return ControllerRet::unexpected_error;
+
         $refresh_token = $this->jwt->createRefreshToken($user_id);
 
         $arr_cookie_options = array(
@@ -254,11 +256,11 @@ class UserController
         if ($name === null) return ControllerRet::bad_request;
         $headcount = $this->validateInteger(@$data->headcount, 5);
         if ($headcount === null) return ControllerRet::bad_request;
-        $ret = $this->validateGetIntezmenyData($data);
+        $ret = $this->validateIntezmenyData($data);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
-        if ($db->classExistsViaName($intezmeny_id, $name)) return ControllerRet::bad_request;
+        if ($db->classExistsViaName($intezmeny_id, $name) === true) return ControllerRet::bad_request;
 
         if ($db->createClass($intezmeny_id, $name, $headcount) === false) return ControllerRet::unexpected_error;
 
@@ -270,7 +272,7 @@ class UserController
         $data = json_decode(file_get_contents("php://input"));
         $name = $this->validateString(@$data->name, max_chars: 200);
         if ($name === null) return ControllerRet::bad_request;
-        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")));
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
@@ -291,7 +293,7 @@ class UserController
         $class_id = $this->validateInteger(@$data->class_id, null_allowed: true);
         if ($class_id === null) return ControllerRet::bad_request;
         if ($class_id === false) $class_id = null;
-        $ret = $this->validateGetIntezmenyData($data);
+        $ret = $this->validateIntezmenyData($data);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
@@ -313,7 +315,7 @@ class UserController
         if ($type === false) $type = null;
         $space = $this->validateInteger(@$data->space, 5);
         if ($space === null) return ControllerRet::bad_request;
-        $ret = $this->validateGetIntezmenyData($data);
+        $ret = $this->validateIntezmenyData($data);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
@@ -337,7 +339,7 @@ class UserController
         $phone_number = $this->validatePhoneNumber(@$data->phone_number, true);
         if ($phone_number === null) return ControllerRet::bad_request;
         if ($phone_number === false) $phone_number = null;
-        $ret = $this->validateGetIntezmenyData($data);
+        $ret = $this->validateIntezmenyData($data);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
@@ -359,7 +361,7 @@ class UserController
         $until = $this->validateTime(@$data->until, date_allowed: true);
         if ($until === null) return ControllerRet::bad_request;
         if ($from->getTimestamp() > $until->getTimestamp()) return ControllerRet::bad_request;
-        $ret = $this->validateGetIntezmenyData($data);
+        $ret = $this->validateIntezmenyData($data);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
@@ -380,14 +382,14 @@ class UserController
         $teacher_id = $this->validateInteger(@$data->teacher_id, null_allowed: true);
         if ($teacher_id === null) return ControllerRet::bad_request;
         if ($teacher_id === false) $teacher_id = null;
-        $ret = $this->validateGetIntezmenyData($data);
+        $ret = $this->validateIntezmenyData($data);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
         if ($lesson_id !== null and $db->lessonExists($intezmeny_id, $lesson_id) === false) return ControllerRet::bad_request;
         if ($teacher_id !== null and $db->teacherExists($intezmeny_id, $teacher_id) === false) return ControllerRet::bad_request;
 
-        if ($db->createHomework($intezmeny_id, $due !== null ? $due->format("Y-m-d h:i:s") : null, $lesson_id, $teacher_id) === false) return ControllerRet::unexpecter_error;
+        if ($db->createHomework($intezmeny_id, $due !== null ? $due->format("Y-m-d h:i:s") : null, $lesson_id, $teacher_id) === false) return ControllerRet::unexpected_error;
 
         return ControllerRet::success_created;
     }
@@ -401,7 +403,7 @@ class UserController
         if ($file_name === null) return ControllerRet::bad_request;
         $file_contents = $this->validateFileContents(@$data->file_contents);
         if ($file_contents === null) return ControllerRet::bad_request;
-        $ret = $this->validateGetIntezmenyData($data);
+        $ret = $this->validateIntezmenyData($data);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
@@ -417,9 +419,147 @@ class UserController
         return ControllerRet::success_created;
     }
 
+    public function deleteClass(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $class_id = $this->validateInteger(@$data->class_id);
+        if ($class_id === null) return ControllerRet::bad_request;
+        $ret = $this->validateIntezmenyData($data);
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        if ($db->classExists($intezmeny_id, $class_id) === false) return ControllerRet::bad_request;
+
+        if ($db->deleteClass($intezmeny_id, $class_id) === false) return ControllerRet::unexpected_error;
+
+        return ControllerRet::success;
+    }
+
+    public function deleteLesson(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $lesson_id = $this->validateInteger(@$data->lesson_id);
+        if ($lesson_id === null) return ControllerRet::bad_request;
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")));
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        if ($db->lessonExists($intezmeny_id, $lesson_id) === false) return ControllerRet::bad_request;
+
+        if ($db->deleteLesson($intezmeny_id, $lesson_id) === false) return ControllerRet::unexpected_error;
+
+        return ControllerRet::success;
+    }
+
+    public function deleteGroup(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $group_id = $this->validateInteger(@$data->group_id);
+        if ($group_id === null) return ControllerRet::bad_request;
+        $ret = $this->validateIntezmenyData($data);
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        if ($db->groupExists($intezmeny_id, $group_id) === false) return ControllerRet::bad_request;
+
+        if ($db->deleteGroup($intezmeny_id, $group_id) === false) return ControllerRet::unexpected_error;
+
+        return ControllerRet::success;
+    }
+
+    public function deleteRoom(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $room_id = $this->validateInteger(@$data->room_id);
+        if ($room_id === null) return ControllerRet::bad_request;
+        $ret = $this->validateIntezmenyData($data);
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        if ($db->roomExists($intezmeny_id, $room_id) === false) return ControllerRet::bad_request;
+
+        if ($db->deleteRoom($intezmeny_id, $room_id) === false) return ControllerRet::unexpected_error;
+
+        return ControllerRet::success;
+    }
+
+    public function deleteTeacher(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $teacher_id = $this->validateInteger(@$data->teacher_id);
+        if ($teacher_id === null) return ControllerRet::bad_request;
+        $ret = $this->validateIntezmenyData($data);
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        if ($db->teacherExists($intezmeny_id, $teacher_id) === false) return ControllerRet::bad_request;
+
+        if ($db->deleteTeacher($intezmeny_id, $teacher_id) === false) return ControllerRet::unexpected_error;
+
+        return ControllerRet::success;
+    }
+
+    public function deleteTimetableElement(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $timetable_element_id = $this->validateInteger(@$data->timetable_element_id);
+        if ($timetable_element_id === null) return ControllerRet::bad_request;
+        $ret = $this->validateIntezmenyData($data);
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        if ($db->timetableElementExists($intezmeny_id, $timetable_element_id) === false) return ControllerRet::bad_request;
+
+        if ($db->deleteTimetableElement($intezmeny_id, $timetable_element_id) === false) return ControllerRet::unexpected_error;
+
+        return ControllerRet::success;
+    }
+
+    public function deleteHomework(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $homework_id = $this->validateInteger(@$data->homework_id);
+        if ($homework_id === null) return ControllerRet::bad_request;
+        $ret = $this->validateIntezmenyData($data);
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        if ($db->homeworkExists($intezmeny_id, $homework_id) === false) return ControllerRet::bad_request;
+
+        $attachments = $db->getHomeworkAttachments($intezmeny_id, $homework_id);
+        if ($attachments === false) return ControllerRet::unexpected_error;
+
+        for ($i = 0; $i < count($attachments); $i++) {
+            if (unlink("user_data/intezmeny_$intezmeny_id/" . $attachments[$i][1] . "_" . $attachments[$i][0]) === false) return ControllerRet::unexpected_error;
+        }
+        if ($db->deleteHomework($intezmeny_id, $homework_id) === false) return ControllerRet::unexpected_error;
+
+        return ControllerRet::success;
+    }
+
+    public function deleteAttachment(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $attachment_id = $this->validateInteger(@$data->attachment_id);
+        if ($attachment_id === null) return ControllerRet::bad_request;
+        $ret = $this->validateIntezmenyData($data);
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        if ($db->attachmentExists($intezmeny_id, $attachment_id) === false) return ControllerRet::bad_request;
+
+        $attachment_name = $db->getAttachmentName($intezmeny_id, $attachment_id);
+        if ($attachment_name === false) return ControllerRet::unexpected_error;
+
+        if (unlink("user_data/intezmeny_$intezmeny_id/" . $attachment_name . "_" . $attachment_id) === false) return ControllerRet::unexpected_error;
+        if ($db->deleteAttachment($intezmeny_id, $attachment_id) === false) return ControllerRet::unexpected_error;
+
+        return ControllerRet::success;
+    }
+
     public function getClasses(): ControllerRet
     {
-        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")));
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
@@ -434,7 +574,7 @@ class UserController
 
     public function getLessons(): ControllerRet
     {
-        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")));
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
@@ -449,7 +589,7 @@ class UserController
 
     public function getGroups(): ControllerRet
     {
-        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")));
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
@@ -464,7 +604,7 @@ class UserController
 
     public function getRooms(): ControllerRet
     {
-        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")));
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
@@ -479,7 +619,7 @@ class UserController
 
     public function getTeachers(): ControllerRet
     {
-        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")));
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
@@ -494,7 +634,7 @@ class UserController
 
     public function getTimetable(): ControllerRet
     {
-        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")));
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
@@ -509,7 +649,7 @@ class UserController
 
     public function getHomeworks(): ControllerRet
     {
-        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")));
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
@@ -527,7 +667,7 @@ class UserController
         $data = json_decode(file_get_contents("php://input"));
         $attachment_id = $this->validateInteger(@$data->attachment_id);
         if ($attachment_id === null) return ControllerRet::bad_request;
-        $ret = $this->validateGetIntezmenyData($data);
+        $ret = $this->validateIntezmenyData($data);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
@@ -548,7 +688,7 @@ class UserController
     /**
      * Returns the database connection and the intezmeny's id
      */
-    private function validateGetIntezmenyData(mixed $data): ControllerRet|array
+    private function validateIntezmenyData(mixed $data): ControllerRet|array
     {
         $intezmeny_id = $this->validateInteger(@$data->intezmeny_id);
         if ($intezmeny_id === null) return ControllerRet::bad_request;
@@ -678,19 +818,19 @@ class UserController
         if ($date_allowed === true and $time_allowed === true) {
             try {
                 $ret = DateTimeImmutable::createFromFormat("Y-m-d H:i:s", $str_time);
-            } catch (ValueError $e) {
+            } catch (ValueError) {
                 return null;
             }
         } else if ($date_allowed === true and $time_allowed === false) {
             try {
                 $ret = DateTimeImmutable::createFromFormat("Y-m-d", $str_time);
-            } catch (ValueError $e) {
+            } catch (ValueError) {
                 return null;
             }
         } else if ($date_allowed === false and $time_allowed === true) {
             try {
                 $ret = DateTimeImmutable::createFromFormat("H:i:s", $str_time);
-            } catch (ValueError $e) {
+            } catch (ValueError) {
                 return null;
             }
         } else {
@@ -807,7 +947,7 @@ function file_force_contents(string $dir, string $contents): int|false
     if (is_dir($dir) === false) mkdir($dir, recursive: true);
     try {
         return file_put_contents("$dir/$file", $contents, LOCK_EX);
-    } catch (ValueError $e) {
+    } catch (ValueError) {
         return false;
     }
 }

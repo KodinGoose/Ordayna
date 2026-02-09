@@ -10,7 +10,7 @@ $user_controller = new UserController();
 $req_uri = explode("/", explode("?", $_SERVER["REQUEST_URI"])[0]);
 
 if (count($req_uri) <= 1) {
-    if ($_SERVER["REQUEST_METHOD"] != "GET") {
+    if ($_SERVER["REQUEST_METHOD"] !== "GET") {
         http_response_code(405);
         return;
     }
@@ -21,24 +21,11 @@ if (count($req_uri) <= 1) {
 
 switch ($req_uri[1]) {
     case "":
-        if ($_SERVER["REQUEST_METHOD"] != "GET") {
+        if ($_SERVER["REQUEST_METHOD"] !== "GET") {
             http_response_code(405);
             break;
         }
         include "resource/index.php";
-        http_response_code(200);
-        break;
-    case "get_all_users":
-        if ($_SERVER["REQUEST_METHOD"] != "GET") {
-            http_response_code(405);
-            break;
-        }
-        $res = $user_controller->getAllUsers();
-        if ($res == null) {
-            http_response_code(400);
-            break;
-        }
-        echo $res;
         http_response_code(200);
         break;
     case "token":
@@ -49,21 +36,21 @@ switch ($req_uri[1]) {
 
         switch ($req_uri[2]) {
             case "get_refresh_token":
-                if ($_SERVER["REQUEST_METHOD"] != "POST") {
+                if ($_SERVER["REQUEST_METHOD"] !== "POST") {
                     http_response_code(405);
                     break;
                 }
                 handleReturn($user_controller->getRefreshToken());
                 break;
             case "refresh_refresh_token":
-                if ($_SERVER["REQUEST_METHOD"] != "GET") {
+                if ($_SERVER["REQUEST_METHOD"] !== "GET") {
                     http_response_code(405);
                     break;
                 }
                 handleReturn($user_controller->refreshRefreshToken());
                 break;
             case "get_access_token":
-                if ($_SERVER["REQUEST_METHOD"] != "GET") {
+                if ($_SERVER["REQUEST_METHOD"] !== "GET") {
                     http_response_code(405);
                     break;
                 }
@@ -82,35 +69,35 @@ switch ($req_uri[1]) {
 
         switch ($req_uri[2]) {
             case "create_user":
-                if ($_SERVER["REQUEST_METHOD"] != "POST") {
+                if ($_SERVER["REQUEST_METHOD"] !== "POST") {
                     http_response_code(405);
                     break;
                 }
                 handleReturn($user_controller->createUser());
                 break;
             case "delete_user":
-                if ($_SERVER["REQUEST_METHOD"] != "DELETE") {
+                if ($_SERVER["REQUEST_METHOD"] !== "DELETE") {
                     http_response_code(405);
                     break;
                 }
                 handleReturn($user_controller->deleteUser());
                 break;
             case "change_disp_name":
-                if ($_SERVER["REQUEST_METHOD"] != "POST") {
+                if ($_SERVER["REQUEST_METHOD"] !== "POST") {
                     http_response_code(405);
                     break;
                 }
                 handleReturn($user_controller->changeDisplayName());
                 break;
             case "change_phone_number":
-                if ($_SERVER["REQUEST_METHOD"] != "POST") {
+                if ($_SERVER["REQUEST_METHOD"] !== "POST") {
                     http_response_code(405);
                     break;
                 }
                 handleReturn($user_controller->changePhoneNumber());
                 break;
             case "change_pass":
-                if ($_SERVER["REQUEST_METHOD"] != "POST") {
+                if ($_SERVER["REQUEST_METHOD"] !== "POST") {
                     http_response_code(405);
                     break;
                 }
@@ -122,21 +109,21 @@ switch ($req_uri[1]) {
         }
         break;
     case "create_intezmeny":
-        if ($_SERVER["REQUEST_METHOD"] != "POST") {
+        if ($_SERVER["REQUEST_METHOD"] !== "POST") {
             http_response_code(405);
             break;
         }
         handleReturn($user_controller->createIntezmeny());
         break;
     case "delete_intezmeny":
-        if ($_SERVER["REQUEST_METHOD"] != "DELETE") {
+        if ($_SERVER["REQUEST_METHOD"] !== "DELETE") {
             http_response_code(405);
             break;
         }
         handleReturn($user_controller->deleteIntezmeny());
         break;
     case "get_intezmenys":
-        if ($_SERVER["REQUEST_METHOD"] != "GET") {
+        if ($_SERVER["REQUEST_METHOD"] !== "GET") {
             http_response_code(405);
             break;
         }
@@ -147,10 +134,6 @@ switch ($req_uri[1]) {
             http_response_code(404);
             break;
         }
-        if ($_SERVER["REQUEST_METHOD"] != "POST") {
-            http_response_code(405);
-            break;
-        }
 
         switch ($req_uri[2]) {
             case "create":
@@ -158,7 +141,7 @@ switch ($req_uri[1]) {
                     http_response_code(404);
                     break;
                 }
-                if ($_SERVER["REQUEST_METHOD"] != "POST") {
+                if ($_SERVER["REQUEST_METHOD"] !== "POST") {
                     http_response_code(405);
                     break;
                 }
@@ -192,12 +175,51 @@ switch ($req_uri[1]) {
                         break;
                 }
                 break;
+            case "delete":
+                if (count($req_uri) <= 3) {
+                    http_response_code(404);
+                    break;
+                }
+                if ($_SERVER["REQUEST_METHOD"] !== "DELETE") {
+                    http_response_code(405);
+                    break;
+                }
+                switch ($req_uri[3]) {
+                    case "class":
+                        handleReturn($user_controller->deleteClass());
+                        break;
+                    case "lesson":
+                        handleReturn($user_controller->deleteLesson());
+                        break;
+                    case "group":
+                        handleReturn($user_controller->deleteGroup());
+                        break;
+                    case "room":
+                        handleReturn($user_controller->deleteRoom());
+                        break;
+                    case "teacher":
+                        handleReturn($user_controller->deleteTeacher());
+                        break;
+                    case "timetable_element":
+                        handleReturn($user_controller->deleteTimetableElement());
+                        break;
+                    case "homework":
+                        handleReturn($user_controller->deleteHomework());
+                        break;
+                    case "attachment":
+                        handleReturn($user_controller->deleteAttachment());
+                        break;
+                    default:
+                        http_response_code(404);
+                        break;
+                }
+                break;
             case "get":
                 if (count($req_uri) <= 3) {
                     http_response_code(404);
                     break;
                 }
-                if ($_SERVER["REQUEST_METHOD"] != "POST") {
+                if ($_SERVER["REQUEST_METHOD"] !== "POST") {
                     http_response_code(405);
                     break;
                 }
