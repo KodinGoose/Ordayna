@@ -3,25 +3,10 @@
 <?php  ?>
 <style>
     .container {height: 90%;width: 90%;margin-left: 2%!important;}
-    #classes{
-        margin: 10px;
-        position: fixed;
-        top: 35px;
-        right: 10px; 
-        width: 7%;
-    }
-    .listbox{width:100%; }
-    .box-md-long{height: 44.4vh;border: 3px black solid; padding: 1.1em;}
-
     
-div{
-    min-height: fit-content!important;
-    min-width: fit-content!important;
-    word-wrap: break-word;
-}
 </style>
 
-<body onload="generateContent()">
+<body onload="generateContentForCreate()">
 
 <h1>Órarend tervező </h1> 
 <select name="class_id" id="classes" >
@@ -35,7 +20,7 @@ div{
         <div class="col-2">
             <div class="box">
                 <p class="h6">Tanárok<hr></p>
-                <select name="sometext" size="14" class="listbox" id="tanar_option" onchange="addItem(this, 'tanar')">
+                <select name="sometext" size="15" class="listbox" id="tanar_option" onchange="addItem(this, 'tanar')">
                     
                 </select>
             </div>
@@ -43,7 +28,7 @@ div{
         <div class="col-2">
             <div class="box">
                 <p class="h6">Tantárgy<hr></p>
-                <select name="sometext" size="14" class="listbox" id="tantargy_option" onchange="addItem(this, 'targy')">
+                <select name="sometext" size="15" class="listbox" id="tantargy_option" onchange="addItem(this, 'targy')">
                     
                     
                 </select>
@@ -66,7 +51,7 @@ div{
         <div class="col-5 ">
             <div class="box-small">
                 <p class="h6">Termek<hr></p>
-                <select name="sometext" size="4" class="listbox" id="terem_option" onchange="addItem(this, 'terem')">
+                <select name="sometext" size="5" class="listbox" id="terem_option" onchange="addItem(this, 'terem')">
                     
                 </select>
             </div>
@@ -94,10 +79,8 @@ div{
 <button onclick="location.href='profile.php'"  id="user_button">Felhasználó</button>
 
 <script>
-        function addItem(e, z) {
-            document.getElementById(z).value = e.options[e.selectedIndex].getAttribute("value");
-        }
-    </script>
+        
+</script>
 
 
 <script src="js/time_create.js"></script>

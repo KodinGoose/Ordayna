@@ -3,14 +3,14 @@
 
 <style>
 
-.container {height: 90%;width: 95%;margin-left: 1%!important;}
+    .container {height: 90%;width: 95%;margin-left: 1%!important;}
 /* .container{border: 3px purple solid;} */
 
 </style>
 
 
 <h1>Házi feladat</h1>
-<div class="container">
+<div class="container" >
 
     <div class="row g-1 rowcols-md-4 rowcols-sm-2">
 
@@ -47,10 +47,6 @@
     </div>
 
 
-
-</div>
-
-
-
 <button onclick="location.href='index.php'" id="home_button">home</button>
 <button onclick="location.href='profile.php'" id="user_button">Felhasználó</button>
+</div>

@@ -18,7 +18,7 @@ tanar.value="";
 const terem =document.getElementById('terem');
 terem.value="";
 
-function generateContent() {
+function generateContentForCreate() {
     console.log("loads")
     teac_tag.innerHTML = teac.map(t => `<option value="${t}" >${t}</option>`).join("");
     subj_tag.innerHTML = subj.map(t => `<option value="${t}" >${t}</option>`).join("");
@@ -34,4 +34,8 @@ function lockData(){
         alert("hy")
         
     }
+}
+
+function addItem(e, z) {
+    document.getElementById(z).value = e.options[e.selectedIndex].getAttribute("value");
 }

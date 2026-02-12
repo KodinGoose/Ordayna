@@ -2,7 +2,7 @@
 
 
 <style>
-    .container {height: 90%;width: 84.5%;margin-left: 2% !important;}
+    .container {height: 90%;width: 95%;margin-left: 1%!important;}
 
 </style>
 
@@ -54,7 +54,7 @@
     
 
 
-</div>
+
 
 <br><button onclick="location.href='index.php'" id="home_button">home</button>
-<button onclick="location.href='profile.php'" id="user_button">Felhasználó</button>
+<button onclick="location.href='profile.php'" id="user_button">Felhasználó</button></div>

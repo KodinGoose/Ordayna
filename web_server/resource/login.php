@@ -8,8 +8,8 @@
 
         <label for="login_pass">Jelszó</label><br>
         <input type="password" id="login_pass"><br>
-    </form><p>
-    <button onclick="location.href='index.php'" id="login_button">Belépés</button>
-    <button onclick="location.href='signup.php'" id="to_signup_button">Regisztráció</button></p>
+    </form><div id="please_be_centered">
+    <button onclick="location.href='index.php'" id="login_button">Belépés</button><br>
+    <button onclick="location.href='signup.php'" id="to_signup_button">Regisztráció</button></div>
 </div>
 <button onclick="location.href='profile.php'" id="user_button">Felhasználó</button>
