@@ -9,4 +9,4 @@ INSERT INTO ordayna_main_db.intezmeny (id, name) VALUE (400000, "tester_intezmen
 
 INSERT INTO ordayna_main_db.intezmeny_users (intezmeny_id, users_id, role_, invite_accepted) VALUE (400000, 200000, "admin", TRUE);
 
-INSERT INTO ordayna_main_db.revoked_refresh_tokens (uuid, duration) VALUE (UUID_v4(), '0 0:0:30');
+INSERT INTO ordayna_main_db.revoked_refresh_tokens (uid, token_uuid, duration) VALUE (98324, UUID_v4(), '0 0:0:30');

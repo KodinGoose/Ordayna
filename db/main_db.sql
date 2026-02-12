@@ -32,11 +32,12 @@ CREATE OR REPLACE TABLE intezmeny_users (
  );
 
 CREATE OR REPLACE TABLE revoked_refresh_tokens (
-	id                   INT UNSIGNED   NOT NULL AUTO_INCREMENT  PRIMARY KEY,
-	uuid                 UUID           NOT NULL,
-	created_at           DATETIME       NOT NULL DEFAULT current_timestamp(),
-	duration             TIME           NOT NULL
- ) ENGINE=InnoDB;
+	id         INT UNSIGNED NOT NULL AUTO_INCREMENT  PRIMARY KEY,
+	uid        INT UNSIGNED NOT NULL,
+	token_uuid UUID         NOT NULL,
+	created_at DATETIME     NOT NULL DEFAULT current_timestamp(),
+	duration   TIME         NOT NULL
+ );
 
 CREATE EVENT remove_token
   ON SCHEDULE EVERY 5 MINUTE DO 

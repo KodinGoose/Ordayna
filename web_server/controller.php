@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 // TODO: Use argon2id instead of bcrypt
-// TODO: Rework session token revocation
 
 static $is_test_server = php_sapi_name() === "cli-server";
 /** 20 mebibytes */
@@ -71,7 +70,9 @@ class Controller
         $new_token = $this->jwt->createRefreshToken($token->claims()->get("uid"));
 
         // Expires after 15 days
-        if ($db->newInvalidRefreshToken($token->claims()->get(RegisteredClaims::ID), '15 0:0:0') === null) return ControllerRet::unexpected_error;
+        if ($db->newInvalidRefreshToken($token->claims()->get("uid"), $token->claims()->get(RegisteredClaims::ID), '15 0:0:0') === null) {
+            return ControllerRet::unexpected_error;
+        }
 
         $arr_cookie_options = array(
             // 15 days
@@ -142,8 +143,8 @@ class Controller
         $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
 
-        // TODO: delete intezmeny's whose sole owner is this user
         if ($db->deleteUserViaId($token->claims()->get("uid")) === null) return ControllerRet::unexpected_error;
+        if ($db->deleteOrphanedIntezmenys() === null) return ControllerRet::unexpected_error;
 
         // Unset token cookies
         setcookie('RefreshToken', "", 0);
@@ -680,7 +681,7 @@ class Controller
         if ($ret === null) return ControllerRet::unexpected_error;
 
         header('Content-Type: application/json');
-        echo json_encode($ret->fetch_all());
+        echo json_encode($ret);
 
         return ControllerRet::success;
     }
@@ -695,7 +696,7 @@ class Controller
         if ($ret === null) return ControllerRet::unexpected_error;
 
         header('Content-Type: application/json');
-        echo json_encode($ret->fetch_all());
+        echo json_encode($ret);
 
         return ControllerRet::success;
     }
@@ -710,7 +711,7 @@ class Controller
         if ($ret === null) return ControllerRet::unexpected_error;
 
         header('Content-Type: application/json');
-        echo json_encode($ret->fetch_all());
+        echo json_encode($ret);
 
         return ControllerRet::success;
     }
@@ -725,7 +726,7 @@ class Controller
         if ($ret === null) return ControllerRet::unexpected_error;
 
         header('Content-Type: application/json');
-        echo json_encode($ret->fetch_all());
+        echo json_encode($ret);
 
         return ControllerRet::success;
     }
@@ -755,7 +756,7 @@ class Controller
         if ($ret === null) return ControllerRet::unexpected_error;
 
         header('Content-Type: application/json');
-        echo json_encode($ret->fetch_all());
+        echo json_encode($ret);
 
         return ControllerRet::success;
     }
@@ -827,7 +828,7 @@ class Controller
         $token = $this->jwt->parseToken($_COOKIE["RefreshToken"]);
         if ($token === null) return ControllerRet::bad_request;
 
-        $ret = $db->isRevokedRefreshToken($token->claims()->get(RegisteredClaims::ID));
+        $ret = $db->isRevokedRefreshToken($token->claims()->get("uid"), $token->claims()->get(RegisteredClaims::ID));
         if ($ret === true) return ControllerRet::unauthorised;
         if ($ret === null) return ControllerRet::unexpected_error;
         if ($this->jwt->validateRefreshToken($token) === false) return ControllerRet::unauthorised;
