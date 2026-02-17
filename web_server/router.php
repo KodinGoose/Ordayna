@@ -14,8 +14,7 @@ if (count($req_uri) <= 1) {
         http_response_code(405);
         return;
     }
-    include "../base/index.php";
-    http_response_code(200);
+    header("Location: resource/index.html");
     return;
 }
 
@@ -25,8 +24,7 @@ switch ($req_uri[1]) {
             http_response_code(405);
             break;
         }
-        include "resource/index.php";
-        http_response_code(200);
+        header("Location: resource/index.html");
         break;
     case "token":
         if (count($req_uri) <= 2) {
