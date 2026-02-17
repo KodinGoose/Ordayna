@@ -26,6 +26,14 @@ switch ($req_uri[1]) {
         }
         header("Location: resource/index.html");
         break;
+    // This is never reached when the backend is behind nginx but the built in php server depends on this
+    case "resource":
+        if ($_SERVER["REQUEST_METHOD"] !== "GET") {
+            http_response_code(405);
+            break;
+        }
+        return false;
+        break;
     case "token":
         if (count($req_uri) <= 2) {
             http_response_code(404);

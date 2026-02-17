@@ -9,4 +9,4 @@ VOLUME /web_server
 
 WORKDIR /web_server
 
-CMD ["bash", "-c", "composer require lcobucci/jwt lcobucci/clock && openssl rand -out secret.key -base64 128 && php -S 0.0.0.0:8000"]
+CMD ["bash", "-c", "composer require lcobucci/jwt lcobucci/clock ramsey/uuid && openssl rand -out secret.key -base64 32 && php -S 0.0.0.0:8000 router.php"]
