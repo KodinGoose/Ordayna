@@ -1044,22 +1044,27 @@ function handleReturn(ControllerRet $ret_val): void
             break;
         case ControllerRet::bad_request:
             http_response_code(400);
+            header('Content-Type: text/plain');
             echo "Bad request";
             break;
         case ControllerRet::already_exists:
             http_response_code(400);
+            header('Content-Type: text/plain');
             echo "Already exists";
             break;
         case ControllerRet::unauthorised:
             http_response_code(403);
+            header('Content-Type: text/plain');
             echo "Unauthorised";
             break;
         case ControllerRet::unexpected_error:
             http_response_code(500);
+            header('Content-Type: text/plain');
             echo "Unexpected error";
             break;
         default:
             http_response_code(500);
+            header('Content-Type: text/plain');
             echo "You shouldn't be seeing this, congrats";
             break;
     }

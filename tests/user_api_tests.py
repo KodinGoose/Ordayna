@@ -1,5 +1,9 @@
 import requests
 
+# https://stackoverflow.com/a/28002687
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
 def handleApiError(message: str, response: requests.Response, expected_res_code, expected_res_body: str):
     global test_count
     global tests_passed
@@ -27,7 +31,7 @@ def testEndpoint(message: str, method: str, endpoint_path: str, cookies, payload
     global test_count
     test_count += 1
 
-    response = requests.request(method, URL + endpoint_path, json=payload, cookies=cookies)
+    response = requests.request(method, URL + endpoint_path, json=payload, cookies=cookies, verify=False)
     handleApiError(message, response, expected_res_code, expected_res_body)
     return response
 
@@ -35,7 +39,7 @@ def testEndpointNoErrorHandling(method: str, endpoint_path: str, cookies, payloa
     global test_count
     test_count += 1
 
-    return requests.request(method, URL + endpoint_path, json=payload, cookies=cookies)
+    return requests.request(method, URL + endpoint_path, json=payload, cookies=cookies, verify=False)
 
 def testId(base_message: str, method: str, endpoint_path: str, base_payload: dict(), jar: dict, id_name: str, null_allowed = False, success_code = 200, is_sensitive = True):
     if (null_allowed):
@@ -145,7 +149,7 @@ intezmeny_id = 0
 teacher_uid = 0
 teacher_refresh_jar = dict()
 teacher_access_jar = dict()
-URL = "http://127.0.0.1:8000"
+URL = "https://127.0.0.1:443"
 
 def main():
     global test_count
@@ -444,7 +448,7 @@ def intezmenyCreateEndpoints():
                  400, "Bad request")
     testEndpoint("Create attachment, file contents too long", "POST", "/intezmeny/create/attachment", access_jar,
                  {"intezmeny_id": f"{intezmeny_id}", "homework_id": "1", "file_name": "test_file", "file_contents": "t" * 1024 * 1024 * 20 + "+"},
-                 400, "Bad request")
+                 413, "<html>\r\n<head><title>413 Request Entity Too Large</title></head>\r\n<body>\r\n<center><h1>413 Request Entity Too Large</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r\n")
     testEndpoint("Create attachment, file contents with null character", "POST", "/intezmeny/create/attachment", access_jar,
                  {"intezmeny_id": f"{intezmeny_id}", "homework_id": "1", "file_name": "test_file", "file_contents": "test_text test_text\ntest_text\x00"},
                  201, "")
