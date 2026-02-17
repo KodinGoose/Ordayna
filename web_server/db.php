@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-include "term.php";
-include "error.php";
+require_once "error.php";
+require_once "config.php";
 
 class DB
 {
@@ -16,14 +16,8 @@ class DB
 
     public static function init(): DB|null
     {
-        $databaseHost = file_get_contents("database_address");
-        if ($databaseHost === false) logError("Failed to read \"database_address\" file");
-        $databaseUsername = 'ordayna_main';
-        $databasePassword = '';
-        $databaseName = '';
-
         try {
-            $connection = mysqli_connect($databaseHost, $databaseUsername, $databasePassword, $databaseName);
+            $connection = mysqli_connect(Config::$database_address, Config::$database_username, Config::$database_password, Config::$database_name);
             if ($connection === false) {
                 logError(mysqli_connect_error());
                 return null;

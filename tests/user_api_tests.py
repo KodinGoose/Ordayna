@@ -172,15 +172,15 @@ def main():
 
 
 def createUser():
-    testString("Create user", "POST", "/user/create_user", {"email": "tester@test.com", "phone_number": "123456789012345", "pass": "tester_pass"}, {}, "disp_name", False)
-    testEmail("Create user", "POST", "/user/create_user", {"disp_name": "tester", "phone_number": "123456789012345", "pass": "tester_pass"}, {}, False)
-    testPassword("Create user", "POST", "/user/create_user", {"disp_name": "tester", "email": "tester@test.com", "phone_number": "123456789012345"}, {}, "pass", True)
-    testPhoneNumber("Create user", "POST", "/user/create_user", {"disp_name": "tester", "email": "tester_no_phone@test.com", "pass": "tester_pass"}, {}, "phone_number", True)
-    testEndpoint("Create user, method is not POST", "PATCH", "/user/create_user", "",
+    testString("Create user", "POST", "/user/create", {"email": "tester@test.com", "phone_number": "123456789012345", "pass": "tester_pass"}, {}, "disp_name", False)
+    testEmail("Create user", "POST", "/user/create", {"disp_name": "tester", "phone_number": "123456789012345", "pass": "tester_pass"}, {}, False)
+    testPassword("Create user", "POST", "/user/create", {"disp_name": "tester", "email": "tester@test.com", "phone_number": "123456789012345"}, {}, "pass", True)
+    testPhoneNumber("Create user", "POST", "/user/create", {"disp_name": "tester", "email": "tester_no_phone@test.com", "pass": "tester_pass"}, {}, "phone_number", True)
+    testEndpoint("Create user, method is not POST", "PATCH", "/user/create", "",
                  {"disp_name": "tester", "email": "tester@test.com", "phone_number": "123456789012345", "pass": "tester_pass"}, 405, "")
-    testEndpoint("Create user", "POST", "/user/create_user", "",
+    testEndpoint("Create user", "POST", "/user/create", "",
                  {"disp_name": "tester", "email": "tester@test.com", "phone_number": "123456789012345", "pass": "tester_pass"}, 201, "")
-    testEndpoint("Create user, user already exists", "POST", "/user/create_user", "",
+    testEndpoint("Create user, user already exists", "POST", "/user/create", "",
                  {"disp_name": "tester", "email": "tester@test.com", "phone_number": "123456789012345", "pass": "tester_pass"}, 400, "Already exists")
 
 
@@ -223,25 +223,25 @@ def changeUserData():
     global access_jar
     global wrong_access_jar
 
-    testEndpoint("Change display name", "POST", "/user/change_disp_name", access_jar,
+    testEndpoint("Change display name", "POST", "/user/change/display_name", access_jar,
                  {"new_disp_name": "testerer"}, 204, "")
-    testString("Change display name", "POST", "/user/change_disp_name", {}, access_jar, "new_disp_name", False)
-    testToken("Change display name", "POST", "/user/change_disp_name", {"new_disp_name": "testerer"}, wrong_access_jar)
-    testEndpoint("Change display name, method is not POST", "PATCH", "/user/change_disp_name", access_jar,
+    testString("Change display name", "POST", "/user/change/display_name", {}, access_jar, "new_disp_name", False)
+    testToken("Change display name", "POST", "/user/change/display_name", {"new_disp_name": "testerer"}, wrong_access_jar)
+    testEndpoint("Change display name, method is not POST", "PATCH", "/user/change/display_name", access_jar,
                  {"new_disp_name": "testerer"}, 405, "")
 
-    testEndpoint("Change phone number", "POST", "/user/change_phone_number", access_jar,
+    testEndpoint("Change phone number", "POST", "/user/change/phone_number", access_jar,
                  {"new_phone_number": "12345"}, 204, "")
-    testPhoneNumber("Change phone number", "POST", "/user/change_phone_number", {}, access_jar, "new_phone_name", False)
-    testToken("Change phone number", "POST", "/user/change_phone_number", {"new_phone_number": "12345"}, wrong_access_jar)
-    testEndpoint("Change phone number, method is not POST", "PATCH", "/user/change_phone_number", access_jar,
+    testPhoneNumber("Change phone number", "POST", "/user/change/phone_number", {}, access_jar, "new_phone_name", False)
+    testToken("Change phone number", "POST", "/user/change/phone_number", {"new_phone_number": "12345"}, wrong_access_jar)
+    testEndpoint("Change phone number, method is not POST", "PATCH", "/user/change/phone_number", access_jar,
                  {"new_phone_number": "12345"}, 405, "")
 
-    testEndpoint("Change password", "POST", "/user/change_pass", access_jar, {"new_pass": "tmp_tester_pass"}, 204, "")
-    testEndpoint("Change password back", "POST", "/user/change_pass", access_jar, {"new_pass": "tester_pass"}, 204, "")
-    testPassword("Change password", "POST", "/user/change_pass", {}, access_jar, "new_pass", True)
-    testToken("Change password", "POST", "/user/change_pass", {"new_pass": "tester_pass"}, wrong_access_jar)
-    testEndpoint("Change password, method is not POST", "PATCH", "/user/change_pass", access_jar,
+    testEndpoint("Change password", "POST", "/user/change/password", access_jar, {"new_pass": "tmp_tester_pass"}, 204, "")
+    testEndpoint("Change password back", "POST", "/user/change/password", access_jar, {"new_pass": "tester_pass"}, 204, "")
+    testPassword("Change password", "POST", "/user/change/password", {}, access_jar, "new_pass", True)
+    testToken("Change password", "POST", "/user/change/password", {"new_pass": "tester_pass"}, wrong_access_jar)
+    testEndpoint("Change password, method is not POST", "PATCH", "/user/change/password", access_jar,
                  {"new_pass": "tester_pass"}, 405, "")
 
 
@@ -273,7 +273,7 @@ def inviteEndpoints():
     global wrong_access_jar
     global intezmeny_id
 
-    testEndpoint("Create teacher user", "POST", "/user/create_user", {},
+    testEndpoint("Create teacher user", "POST", "/user/create", {},
                  {"disp_name": "tester", "email": "tester_teacher@test.com", "phone_number": "123456789012345", "pass": "tester_pass"}, 201, "")
     teacher_refresh_jar = testEndpoint("Get teacher refresh token", "POST", "/token/get_refresh_token", {},
                  {"email": "tester_teacher@test.com", "pass": "tester_pass"}, 200, "").cookies
@@ -597,10 +597,10 @@ def deleteUser():
     global access_jar
     global wrong_access_jar
 
-    testToken("Delete user", "DELETE", "/user/delete_user", {}, wrong_access_jar)
-    testEndpoint("Delete user, method is not DELETE", "PATCH", "/user/delete_user", access_jar, {}, 405, "")
-    testEndpoint("Delete user", "DELETE", "/user/delete_user", access_jar, {}, 204, "")
-    testEndpoint("Delete user, user does not exist", "DELETE", "/user/delete_user", access_jar, {}, 403, "Unauthorised")
+    testToken("Delete user", "DELETE", "/user/delete", {}, wrong_access_jar)
+    testEndpoint("Delete user, method is not DELETE", "PATCH", "/user/delete", access_jar, {}, 405, "")
+    testEndpoint("Delete user", "DELETE", "/user/delete", access_jar, {}, 204, "")
+    testEndpoint("Delete user, user does not exist", "DELETE", "/user/delete", access_jar, {}, 403, "Unauthorised")
 
 
 def cleanup():
@@ -612,8 +612,8 @@ def cleanup():
     no_phone_refresh_jar = testEndpoint("Get refresh token for no phone user", "POST", "/token/get_refresh_token", "",
                                         {"email": "tester_no_phone@test.com", "pass": "tester_pass"}, 200, "").cookies
     no_phone_access_jar = testEndpoint("Get access token for no phone user", "GET", "/token/get_access_token", no_phone_refresh_jar, {}, 200, "").cookies
-    testEndpoint("Delete no phone number user", "DELETE", "/user/delete_user", no_phone_access_jar, {}, 204, "")
-    testEndpoint("Delete teacher user", "DELETE", "/user/delete_user", teacher_access_jar, {}, 204, "")
+    testEndpoint("Delete no phone number user", "DELETE", "/user/delete", no_phone_access_jar, {}, 204, "")
+    testEndpoint("Delete teacher user", "DELETE", "/user/delete", teacher_access_jar, {}, 204, "")
 
 
 main()
