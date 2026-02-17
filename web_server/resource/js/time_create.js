@@ -9,6 +9,9 @@ const subj_tag = document.getElementById("tantargy_option");
 const room_tag = document.getElementById("terem_option");
 const clas_tag = document.getElementById("classes");
 
+const day=document.getElementById("days");
+const id=document.getElementById("get_id")
+
 const orarend = document.getElementById("orarend_box");
 
 const targy =document.getElementById('targy');
@@ -18,7 +21,12 @@ tanar.value="";
 const terem =document.getElementById('terem');
 terem.value="";
 
-function generateContent() {
+
+const err=document.getElementById("err");
+
+err.innerHTML="";
+
+function generateContentForCreate() {
     console.log("loads")
     teac_tag.innerHTML = teac.map(t => `<option value="${t}" >${t}</option>`).join("");
     subj_tag.innerHTML = subj.map(t => `<option value="${t}" >${t}</option>`).join("");
@@ -29,9 +37,36 @@ function generateContent() {
     console.log("works")
 }
 
+let db=0;
+
 function lockData(){
+    if (orarend.innerHTML.trim() !== "") {
+        id.setAttribute('max',db)
+    }
     if (terem.value!="" && tanar.value!="" && targy.value!="" ){
-        alert("hy")
+        curr_id="ora_"+db;
+        let ora_span=document.createElement("span");
+        ora_span.setAttribute('id',curr_id)
+        ora_span.innerHTML= db+" "+ terem.value+" "+ tanar.value+" "+ targy.value +" "+ day.value+"<br>";
+        orarend.appendChild(ora_span)
+        db++;
         
     }
+   
 }
+
+function addItem(e, z) {
+    document.getElementById(z).value = e.options[e.selectedIndex].getAttribute("value");
+}
+
+function deleteData(){
+    del_id=document.getElementById('ora_'+id.value);
+    if(del_id){
+        del_id.remove();
+        err.innerHTML=""
+    }else{err.innerHTML="Nincs ilyen ID elem"}
+    
+    
+}
+
+
