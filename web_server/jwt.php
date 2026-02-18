@@ -40,9 +40,9 @@ class JWT
     public static function init(): JWT|false {
         $jwt = new JWT();
         try {
-            $jwt->key = InMemory::base64Encoded(Config::$jwt_secret);
-        } catch (Exception) {
-            logError("Failed to initialize JWT Class from Config::\$jwt_secret");
+            $jwt->key = InMemory::plainText(Config::$jwt_secret);
+        } catch (Exception $e) {
+            logError("Failed to initialize JWT Class from Config::\$jwt_secret; Exception: ".$e->getMessage());
             return false;
         }
         return $jwt;
