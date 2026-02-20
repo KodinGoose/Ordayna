@@ -7,6 +7,10 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 def handleApiError(message: str, response: requests.Response, expected_res_code, expected_res_body: str):
     global test_count
     global tests_passed
+
+    # Delete line and move cursor to start of collumn 0
+    print("\x1b[2K\x1b[G", end="")
+
     passed = True
     if (response.status_code != expected_res_code or response.text != expected_res_body):
         text = "\n        ".join(response.text.split("\n"))
@@ -26,6 +30,7 @@ def handleApiError(message: str, response: requests.Response, expected_res_code,
             passed = False
 
     if (passed): tests_passed += 1
+    print(f"Current test: {test_count}", end="", flush=True)
 
 def testEndpoint(message: str, method: str, endpoint_path: str, cookies, payload: dict(), expected_res_code, expected_res_body):
     global test_count
@@ -155,6 +160,7 @@ def main():
     global test_count
     global tests_passed
 
+    print(f"Current test: {test_count}", end="", flush=True)
     createUser()
     tokens()
     changeUserData()
@@ -169,6 +175,8 @@ def main():
 
     cleanup()
 
+    # Delete line and move cursor to start of collumn 0
+    print("\x1b[2K\x1b[G", end="")
     print(f"Tests passed: {tests_passed}/{test_count}")
 
 
