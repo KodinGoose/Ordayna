@@ -86,7 +86,20 @@ class DB
         }
     }
 
-    function getUserPassViaEmail(string $email): string|null
+    function getUserPassHash(int $uid): string|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT password_hash FROM users WHERE id = ?',
+                array($uid)
+            ))) === null ? null : $ret[0][0];
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function getUserPassHashViaEmail(string $email): string|null
     {
         try {
             if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
@@ -164,7 +177,7 @@ class DB
         }
     }
 
-    function changeDisplayNameViaId(int $uid, string $new_disp_name): true|null
+    function changeDisplayName(int $uid, string $new_disp_name): true|null
     {
         try {
             if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
@@ -177,7 +190,7 @@ class DB
         }
     }
 
-    function changePhoneNumberViaId(int $uid, string $new_phone_number): true|null
+    function changePhoneNumber(int $uid, string $new_phone_number): true|null
     {
         try {
             if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
@@ -190,7 +203,7 @@ class DB
         }
     }
 
-    function changePasswordHashViaId(int $uid, string $new_pass_hash): true|null
+    function changePasswordHash(int $uid, string $new_pass_hash): true|null
     {
         try {
             if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
@@ -203,12 +216,25 @@ class DB
         }
     }
 
-    function isRevokedRefreshToken(int $uid, string $token_uuid): bool|null
+    function newToken(int $uid, string $token_uuid, DateTimeImmutable $expires_after): true|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'INSERT INTO tokens (uid, token_uuid, expires_after) VALUE (?, ?, ?)',
+                array($uid, $token_uuid, $expires_after->format("Y-m-d H:i:s"))
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function isRevokedToken(int $uid, string $token_uuid): bool|null
     {
         try {
             if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
             return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT EXISTS (SELECT * FROM revoked_refresh_tokens WHERE uid = ? AND token_uuid = ?)',
+                'SELECT EXISTS (SELECT * FROM tokens WHERE uid = ? AND token_uuid = ? AND is_revoked = TRUE)',
                 array($uid, $token_uuid)
             ))) === null ? null : $ret[0][0] === 1;
         } catch (Exception) {
@@ -216,13 +242,26 @@ class DB
         }
     }
 
-    function newInvalidRefreshToken(int $uid, string $token_uuid, string $expires_after): true|null
+    function revokeToken(int $uid, string $token_uuid): true|null
     {
         try {
             if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
             return $this->handleQueryResult($this->connection->execute_query(
-                'INSERT INTO revoked_refresh_tokens (uid, token_uuid, duration) VALUE (?, ?, ?)',
-                array($uid, $token_uuid, $expires_after)
+                'UPDATE tokens SET is_revoked=TRUE WHERE uid = ? AND token_uuid = ?',
+                array($uid, $token_uuid)
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function revokeAllTokens(int $uid): true|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'UPDATE tokens SET is_revoked=TRUE WHERE uid = ?',
+                array($uid)
             ));
         } catch (Exception) {
             return $this->logError(false);

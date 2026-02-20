@@ -23,7 +23,7 @@ class Controller
         $data = json_decode(file_get_contents("php://input"));
         $email = Controller::validateEmail(@$data->email);
         if ($email === null) return handleReturn(ControllerRet::bad_request);
-        $pass = Controller::validateString(@$data->pass, min_chars: 8, max_chars: 300);
+        $pass = Controller::validateString(@$data->pass, min_chars: 12, max_chars: 500);
         if ($pass === null) return handleReturn(ControllerRet::bad_request);
 
         $db = DB::init();
@@ -33,16 +33,28 @@ class Controller
         if ($ret === false) return handleReturn(ControllerRet::unauthorised);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        $user_pass = $db->getUserPassViaEmail($email);
-        if ($user_pass === null) return handleReturn(ControllerRet::unexpected_error);
-        if (password_verify($pass, $user_pass) === false) return handleReturn(ControllerRet::unauthorised);
+        $pass_hash = $db->getUserPassHashViaEmail($email);
+        if ($pass_hash === null) return handleReturn(ControllerRet::unexpected_error);
+        if (password_verify($pass, $pass_hash) === false) return handleReturn(ControllerRet::unauthorised);
 
         $user_id = $db->getUserIdViaEmail($email);
         if ($user_id === null) return handleReturn(ControllerRet::unexpected_error);
 
+        if (password_needs_rehash($pass_hash, PASSWORD_DEFAULT)) {
+            $new_pass_hash = password_hash($pass, PASSWORD_DEFAULT);
+            if ($new_pass_hash === false) return handleReturn(ControllerRet::unexpected_error);
+            if ($new_pass_hash === null) return handleReturn(ControllerRet::unexpected_error);
+            if ($db->changePasswordHash($user_id, $new_pass_hash) === null) return handleReturn(ControllerRet::unexpected_error);
+        }
+
         $jwt = JWT::init();
         if ($jwt === false) return handleReturn(ControllerRet::unexpected_error);
         $refresh_token = $jwt->createRefreshToken($user_id);
+
+        $new_token_expiry = (new DateTimeImmutable("now", new DateTimeZone("UTC")))->modify('+15 day');
+        if ($db->newToken($refresh_token->claims()->get("uid"), $refresh_token->claims()->get(RegisteredClaims::ID), $new_token_expiry) === null) {
+            return handleReturn(ControllerRet::unexpected_error);
+        }
 
         $arr_cookie_options = array(
             'expires' => time() + 60 * 60 * 24 * 15,
@@ -69,8 +81,11 @@ class Controller
         if (is_a($token, "ControllerRet") === true) return handleReturn($token);
         $new_token = $jwt->createRefreshToken($token->claims()->get("uid"));
 
-        // Expires after 15 days
-        if ($db->newInvalidRefreshToken($token->claims()->get("uid"), $token->claims()->get(RegisteredClaims::ID), '15 0:0:0') === null) {
+        if ($db->revokeToken($token->claims()->get("uid"), $token->claims()->get(RegisteredClaims::ID)) === null) {
+            return handleReturn(ControllerRet::unexpected_error);
+        }
+        $new_token_expiry = (new DateTimeImmutable("now", new DateTimeZone("UTC")))->modify('+15 day');
+        if ($db->newToken($new_token->claims()->get("uid"), $new_token->claims()->get(RegisteredClaims::ID), $new_token_expiry) === null) {
             return handleReturn(ControllerRet::unexpected_error);
         }
 
@@ -100,6 +115,11 @@ class Controller
         if (is_a($token, "ControllerRet") === true) return handleReturn($token);
         $new_access_token = $jwt->createAccessToken($token->claims()->get("uid"));
 
+        $new_token_expiry = (new DateTimeImmutable("now", new DateTimeZone("UTC")))->modify('+10 minute');
+        if ($db->newToken($new_access_token->claims()->get("uid"), $new_access_token->claims()->get(RegisteredClaims::ID), $new_token_expiry) === null) {
+            return handleReturn(ControllerRet::unexpected_error);
+        }
+
         $arr_cookie_options = array(
             // 10 minutes
             'expires' => time() + 60 * 10,
@@ -121,7 +141,7 @@ class Controller
         if ($disp_name === null) return handleReturn(ControllerRet::bad_request);
         $email = Controller::validateEmail(@$data->email);
         if ($email === null) return handleReturn(ControllerRet::bad_request);
-        $pass = Controller::validateString(@$data->pass, min_chars: 8, max_chars: 300);
+        $pass = Controller::validateString(@$data->pass, min_chars: 12, max_chars: 500);
         if ($pass === null) return handleReturn(ControllerRet::bad_request);
         $phone_number = Controller::validatePhoneNumber(@$data->phone_number, true);
         if ($phone_number === null) return handleReturn(ControllerRet::bad_request);
@@ -135,13 +155,18 @@ class Controller
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
         $pass_hash = password_hash($pass, PASSWORD_BCRYPT);
-        if ($db->createUser($disp_name, $email, $phone_number, $pass_hash) === false) return handleReturn(ControllerRet::unexpected_error);
+        if ($pass_hash === false) return handleReturn(ControllerRet::unexpected_error);
+        if ($pass_hash === null) return handleReturn(ControllerRet::unexpected_error);
+        if ($db->createUser($disp_name, $email, $phone_number, $pass_hash) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_created);
     }
 
     public static function deleteUser(): null
     {
+        $data = json_decode(file_get_contents("php://input"));
+        $pass = Controller::validateString(@$data->pass, min_chars: 12, max_chars: 500);
+        if ($pass === null) return handleReturn(ControllerRet::bad_request);
         $db = DB::init();
         if ($db === null) return handleReturn(ControllerRet::unexpected_error);
 
@@ -150,8 +175,14 @@ class Controller
         $token = Controller::validateAccessToken($db, $jwt);
         if (is_a($token, "ControllerRet") === true) return handleReturn($token);
 
+        $pass_hash = $db->getUserPassHash($token->claims()->get("uid"));
+        if ($pass_hash === null) return handleReturn(ControllerRet::unexpected_error);
+        if (password_verify($pass, $pass_hash) === false) return handleReturn(ControllerRet::unauthorised);
+
         if ($db->deleteUserViaId($token->claims()->get("uid")) === null) return handleReturn(ControllerRet::unexpected_error);
         if ($db->deleteOrphanedIntezmenys() === null) return handleReturn(ControllerRet::unexpected_error);
+
+        if ($db->revokeAllTokens($token->claims()->get("uid")) === null) return handleReturn(ControllerRet::unexpected_error);
 
         // Unset token cookies
         setcookie('RefreshToken', "", 0);
@@ -174,7 +205,7 @@ class Controller
         $token = Controller::validateAccessToken($db, $jwt);
         if (is_a($token, "ControllerRet") === true) return handleReturn($token);
 
-        if ($db->changeDisplayNameViaId($token->claims()->get("uid"), $new_disp_name) === null) return handleReturn(ControllerRet::unexpected_error);
+        if ($db->changeDisplayName($token->claims()->get("uid"), $new_disp_name) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -193,16 +224,17 @@ class Controller
         $token = Controller::validateAccessToken($db, $jwt);
         if (is_a($token, "ControllerRet") === true) return handleReturn($token);
 
-        if ($db->changePhoneNumberViaId($token->claims()->get("uid"), $data->new_phone_number) === null) return handleReturn(ControllerRet::unexpected_error);
+        if ($db->changePhoneNumber($token->claims()->get("uid"), $data->new_phone_number) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
 
-    // TODO: Ask for the old password
     public static function changePassword(): null
     {
         $data = json_decode(file_get_contents("php://input"));
-        $new_pass = Controller::validateString(@$data->new_pass, min_chars: 8, max_chars: 300);
+        $pass = Controller::validateString(@$data->pass, min_chars: 12, max_chars: 500);
+        if ($pass === null) return handleReturn(ControllerRet::bad_request);
+        $new_pass = Controller::validateString(@$data->new_pass, min_chars: 12, max_chars: 500);
         if ($new_pass === null) return handleReturn(ControllerRet::bad_request);
 
         $db = DB::init();
@@ -213,7 +245,20 @@ class Controller
         $token = Controller::validateAccessToken($db, $jwt);
         if (is_a($token, "ControllerRet") === true) return handleReturn($token);
 
-        if ($db->changePasswordHashViaId($token->claims()->get("uid"), password_hash($new_pass, PASSWORD_BCRYPT)) === null) return handleReturn(ControllerRet::unexpected_error);
+        $pass_hash = $db->getUserPassHash($token->claims()->get("uid"));
+        if ($pass_hash === null) return handleReturn(ControllerRet::unexpected_error);
+        if (password_verify($pass, $pass_hash) === false) return handleReturn(ControllerRet::unauthorised);
+
+        $new_pass_hash = password_hash($new_pass, PASSWORD_DEFAULT);
+        if ($new_pass_hash === false) return handleReturn(ControllerRet::unexpected_error);
+        if ($new_pass_hash === null) return handleReturn(ControllerRet::unexpected_error);
+        if ($db->changePasswordHash($token->claims()->get("uid"), $new_pass_hash) === null) return handleReturn(ControllerRet::unexpected_error);
+
+        if ($db->revokeAllTokens($token->claims()->get("uid")) === null) return handleReturn(ControllerRet::unexpected_error);
+
+        // Unset token cookies
+        setcookie('RefreshToken', "", 0);
+        setcookie('AccessToken', "", 0);
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -1149,7 +1194,7 @@ class Controller
         $token = $jwt->parseToken($_COOKIE["RefreshToken"]);
         if ($token === null) return ControllerRet::bad_request;
 
-        $ret = $db->isRevokedRefreshToken($token->claims()->get("uid"), $token->claims()->get(RegisteredClaims::ID));
+        $ret = $db->isRevokedToken($token->claims()->get("uid"), $token->claims()->get(RegisteredClaims::ID));
         if ($ret === true) return ControllerRet::unauthorised;
         if ($ret === null) return ControllerRet::unexpected_error;
         if ($jwt->validateRefreshToken($token) === false) return ControllerRet::unauthorised;
@@ -1168,6 +1213,9 @@ class Controller
         $token = $jwt->parseToken($_COOKIE["AccessToken"]);
         if ($token === null) return ControllerRet::bad_request;
 
+        $ret = $db->isRevokedToken($token->claims()->get("uid"), $token->claims()->get(RegisteredClaims::ID));
+        if ($ret === true) return ControllerRet::unauthorised;
+        if ($ret === null) return ControllerRet::unexpected_error;
         if ($jwt->validateAccessToken($token) === false) return ControllerRet::unauthorised;
 
         $ret = $db->userExists($token->claims()->get("uid"));
