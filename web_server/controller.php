@@ -51,20 +51,23 @@ class Controller
         if ($jwt === false) return handleReturn(ControllerRet::unexpected_error);
         $refresh_token = $jwt->createRefreshToken($user_id);
 
-        $new_token_expiry = (new DateTimeImmutable("now", new DateTimeZone("UTC")))->modify('+15 day');
-        if ($db->newToken($refresh_token->claims()->get("uid"), $refresh_token->claims()->get(RegisteredClaims::ID), $new_token_expiry) === null) {
-            return handleReturn(ControllerRet::unexpected_error);
-        }
+        if ($db->newToken(
+            $refresh_token->claims()->get("uid"),
+            $refresh_token->claims()->get(RegisteredClaims::ID),
+            $refresh_token->claims()->get(RegisteredClaims::EXPIRATION_TIME)
+        ) === null) return handleReturn(ControllerRet::unexpected_error);
 
-        $arr_cookie_options = array(
-            'expires' => time() + 60 * 60 * 24 * 15,
-            'path' => '/token/',
-            'domain' => '',
-            'secure' => !$is_test_server,
-            'httponly' => true,
-            'samesite' => 'Strict'
+        $age = $refresh_token->claims()->get(RegisteredClaims::EXPIRATION_TIME)->getTimestamp();
+        $age -= $refresh_token->claims()->get(RegisteredClaims::ISSUED_AT)->getTimestamp();
+        header(
+            'Set-Cookie: RefreshToken=' . $refresh_token->toString()
+                . '; Max-Age=' . $age
+                . '; Path=/token/'
+                . ($is_test_server === true ? '' : '; Secure')
+                . '; SameSite=Strict'
+                . '; HttpOnly'
+                . '; Partitioned'
         );
-        setcookie('RefreshToken', $refresh_token->toString(), $arr_cookie_options);
 
         return handleReturn(ControllerRet::success);
     }
@@ -81,24 +84,27 @@ class Controller
         if (is_a($token, "ControllerRet") === true) return handleReturn($token);
         $new_token = $jwt->createRefreshToken($token->claims()->get("uid"));
 
+        if ($db->newToken(
+            $new_token->claims()->get("uid"),
+            $new_token->claims()->get(RegisteredClaims::ID),
+            $new_token->claims()->get(RegisteredClaims::EXPIRATION_TIME)
+        ) === null) return handleReturn(ControllerRet::unexpected_error);
+
         if ($db->revokeToken($token->claims()->get("uid"), $token->claims()->get(RegisteredClaims::ID)) === null) {
             return handleReturn(ControllerRet::unexpected_error);
         }
-        $new_token_expiry = (new DateTimeImmutable("now", new DateTimeZone("UTC")))->modify('+15 day');
-        if ($db->newToken($new_token->claims()->get("uid"), $new_token->claims()->get(RegisteredClaims::ID), $new_token_expiry) === null) {
-            return handleReturn(ControllerRet::unexpected_error);
-        }
 
-        $arr_cookie_options = array(
-            // 15 days
-            'expires' => time() + 60 * 60 * 24 * 15,
-            'path' => '/token/',
-            'domain' => '',
-            'secure' => !$is_test_server,
-            'httponly' => true,
-            'samesite' => 'Strict'
+        $age = $new_token->claims()->get(RegisteredClaims::EXPIRATION_TIME)->getTimestamp();
+        $age -= $new_token->claims()->get(RegisteredClaims::ISSUED_AT)->getTimestamp();
+        header(
+            'Set-Cookie: RefreshToken=' . $new_token->toString()
+                . '; Max-Age=' . $age
+                . '; Path=/token/'
+                . ($is_test_server === true ? '' : '; Secure')
+                . '; SameSite=Strict'
+                . '; HttpOnly'
+                . '; Partitioned'
         );
-        setcookie('RefreshToken', $new_token->toString(), $arr_cookie_options);
 
         return handleReturn(ControllerRet::success);
     }
@@ -115,21 +121,22 @@ class Controller
         if (is_a($token, "ControllerRet") === true) return handleReturn($token);
         $new_access_token = $jwt->createAccessToken($token->claims()->get("uid"));
 
-        $new_token_expiry = (new DateTimeImmutable("now", new DateTimeZone("UTC")))->modify('+10 minute');
-        if ($db->newToken($new_access_token->claims()->get("uid"), $new_access_token->claims()->get(RegisteredClaims::ID), $new_token_expiry) === null) {
-            return handleReturn(ControllerRet::unexpected_error);
-        }
-
-        $arr_cookie_options = array(
-            // 10 minutes
-            'expires' => time() + 60 * 10,
-            'path' => '/',
-            'domain' => '',
-            'secure' => !$is_test_server,
-            'httponly' => true,
-            'samesite' => 'Strict'
+        if ($db->newToken(
+            $new_access_token->claims()->get("uid"),
+            $new_access_token->claims()->get(RegisteredClaims::ID),
+            $new_access_token->claims()->get(RegisteredClaims::EXPIRATION_TIME)
+        ) === null) return handleReturn(ControllerRet::unexpected_error);
+        $age = $new_access_token->claims()->get(RegisteredClaims::EXPIRATION_TIME)->getTimestamp();
+        $age -= $new_access_token->claims()->get(RegisteredClaims::ISSUED_AT)->getTimestamp();
+        header(
+            'Set-Cookie: AccessToken=' . $new_access_token->toString()
+                . '; Max-Age=' . $age
+                . '; Path=/'
+                . ($is_test_server === true ? '' : '; Secure')
+                . '; SameSite=Strict'
+                . '; HttpOnly'
+                . '; Partitioned'
         );
-        setcookie('AccessToken', $new_access_token->toString(), $arr_cookie_options);
 
         return handleReturn(ControllerRet::success);
     }

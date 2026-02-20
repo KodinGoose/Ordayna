@@ -8,7 +8,8 @@ def handleApiError(message: str, response: requests.Response, expected_res_code,
     global test_count
     global tests_passed
 
-    # Delete line and move cursor to start of collumn 0
+    test_count += 1
+    # Delete line and move cursor to collumn 0
     print("\x1b[2K\x1b[G", end="")
 
     passed = True
@@ -30,20 +31,14 @@ def handleApiError(message: str, response: requests.Response, expected_res_code,
             passed = False
 
     if (passed): tests_passed += 1
-    print(f"Current test: {test_count}", end="", flush=True)
+    print(f"Next test: {test_count + 1}", end="", flush=True)
 
 def testEndpoint(message: str, method: str, endpoint_path: str, cookies, payload: dict(), expected_res_code, expected_res_body):
-    global test_count
-    test_count += 1
-
     response = requests.request(method, URL + endpoint_path, json=payload, cookies=cookies, verify=False)
     handleApiError(message, response, expected_res_code, expected_res_body)
     return response
 
 def testEndpointNoErrorHandling(method: str, endpoint_path: str, cookies, payload: dict()):
-    global test_count
-    test_count += 1
-
     return requests.request(method, URL + endpoint_path, json=payload, cookies=cookies, verify=False)
 
 def testId(base_message: str, method: str, endpoint_path: str, base_payload: dict(), jar: dict, id_name: str, null_allowed: bool, success_code: int, is_sensitive: bool):
@@ -160,7 +155,7 @@ def main():
     global test_count
     global tests_passed
 
-    print(f"Current test: {test_count}", end="", flush=True)
+    print(f"Next test: {test_count + 1}", end="", flush=True)
     createUser()
     tokens()
     changeUserData()
