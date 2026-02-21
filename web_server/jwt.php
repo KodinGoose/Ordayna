@@ -50,7 +50,7 @@ class JWT
 
     public function createRefreshToken(int $user_id): UnencryptedToken
     {
-        $now   = new DateTimeImmutable();
+        $now   = new DateTimeImmutable("now", new DateTimeZone("UTC"));
         return $this->tokenBuilder
             // Configures the issuer (iss claim)
             ->issuedBy('http://ordayna.website')
@@ -76,7 +76,7 @@ class JWT
 
     public function createAccessToken(int $user_id): UnencryptedToken
     {
-        $now   = new DateTimeImmutable();
+        $now   = new DateTimeImmutable("now", new DateTimeZone("UTC"));
         return $this->tokenBuilder
             // Configures the issuer (iss claim)
             ->issuedBy('http://ordayna.website')
