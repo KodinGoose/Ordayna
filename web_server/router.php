@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
-require 'vendor/autoload.php';
+namespace Router;
 
+require 'vendor/autoload.php';
 require_once "controller.php";
+
+use Controller\Controller;
+
 $controller = new Controller();
 
 function route(string $method, callable $function): never

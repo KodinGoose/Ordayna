@@ -2,8 +2,17 @@
 
 declare(strict_types=1);
 
+namespace DB;
+
 require_once "error.php";
 require_once "config.php";
+
+use Config\Config;
+use function Error\logError;
+use DateTimeImmutable;
+use Exception;
+use mysqli;
+use mysqli_result;
 
 class DB
 {

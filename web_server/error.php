@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace Error;
+
 function logError(string $msg): bool
 {
     if (file_put_contents(

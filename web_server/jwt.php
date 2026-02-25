@@ -2,7 +2,15 @@
 
 declare(strict_types=1);
 
+namespace JWT;
+
 require_once "config.php";
+
+use Config\Config;
+use function Error\logError;
+use DateTimeImmutable;
+use DateTimeZone;
+use Exception;
 
 use Lcobucci\Clock\SystemClock;
 use Lcobucci\JWT\Encoding\ChainedFormatter;
@@ -16,7 +24,6 @@ use Lcobucci\JWT\Token\InvalidTokenStructure;
 use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\Token\UnsupportedHeaderFound;
 use Lcobucci\JWT\Validation\Constraint\HasClaim;
-
 use Lcobucci\JWT\Validation\Validator;
 use Lcobucci\JWT\Validation\Constraint\IssuedBy;
 use Lcobucci\JWT\Validation\Constraint\PermittedFor;
@@ -33,16 +40,17 @@ class JWT
 
     function __construct()
     {
-        $this->tokenBuilder = (new Builder(new JoseEncoder(), ChainedFormatter::default()));
-        $this->algorithm    = new Blake2b();
+        $this->tokenBuilder = new Builder(new JoseEncoder(), ChainedFormatter::default());
+        $this->algorithm = new Blake2b();
     }
 
-    public static function init(): JWT|false {
+    public static function init(): JWT|false
+    {
         $jwt = new JWT();
         try {
             $jwt->key = InMemory::plainText(Config::$jwt_secret);
         } catch (Exception $e) {
-            logError("Failed to initialize JWT Class from Config::\$jwt_secret; Exception: ".$e->getMessage());
+            logError("Failed to initialize JWT Class from Config::\$jwt_secret; Exception: " . $e->getMessage());
             return false;
         }
         return $jwt;
@@ -50,7 +58,7 @@ class JWT
 
     public function createRefreshToken(int $user_id): UnencryptedToken
     {
-        $now   = new DateTimeImmutable("now", new DateTimeZone("UTC"));
+        $now = new DateTimeImmutable("now", new DateTimeZone("UTC"));
         return $this->tokenBuilder
             // Configures the issuer (iss claim)
             ->issuedBy('http://ordayna.website')
@@ -76,7 +84,7 @@ class JWT
 
     public function createAccessToken(int $user_id): UnencryptedToken
     {
-        $now   = new DateTimeImmutable("now", new DateTimeZone("UTC"));
+        $now = new DateTimeImmutable("now", new DateTimeZone("UTC"));
         return $this->tokenBuilder
             // Configures the issuer (iss claim)
             ->issuedBy('http://ordayna.website')
