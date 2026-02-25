@@ -2,15 +2,19 @@
 
 declare(strict_types=1);
 
-// TODO: Use argon2id instead of bcrypt
-
-use Lcobucci\JWT\Token\RegisteredClaims;
-use Lcobucci\JWT\UnencryptedToken;
+namespace Controller;
 
 require_once "db.php";
 require_once "jwt.php";
 
-static $is_test_server = php_sapi_name() === "cli-server";
+use DB\DB;
+use JWT\JWT;
+use DateTimeImmutable;
+use ValueError;
+
+use Lcobucci\JWT\Token\RegisteredClaims;
+use Lcobucci\JWT\UnencryptedToken;
+
 /** 20 mebibytes */
 static $max_file_size = 1024 * 1024 * 20;
 
@@ -18,12 +22,10 @@ class Controller
 {
     public static function getRefreshToken(): null
     {
-        global $is_test_server;
-
         $data = json_decode(file_get_contents("php://input"));
         $email = Controller::validateEmail(@$data->email);
         if ($email === null) return handleReturn(ControllerRet::bad_request);
-        $pass = Controller::validateString(@$data->pass, min_chars: 8, max_chars: 300);
+        $pass = Controller::validateString(@$data->pass, min_chars: 12, max_chars: 500);
         if ($pass === null) return handleReturn(ControllerRet::bad_request);
 
         $db = DB::init();
@@ -33,83 +35,111 @@ class Controller
         if ($ret === false) return handleReturn(ControllerRet::unauthorised);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        $user_pass = $db->getUserPassViaEmail($email);
-        if ($user_pass === null) return handleReturn(ControllerRet::unexpected_error);
-        if (password_verify($pass, $user_pass) === false) return handleReturn(ControllerRet::unauthorised);
+        $pass_hash = $db->getUserPassHashViaEmail($email);
+        if ($pass_hash === null) return handleReturn(ControllerRet::unexpected_error);
+        if (password_verify($pass, $pass_hash) === false) return handleReturn(ControllerRet::unauthorised);
 
         $user_id = $db->getUserIdViaEmail($email);
         if ($user_id === null) return handleReturn(ControllerRet::unexpected_error);
+
+        if (password_needs_rehash($pass_hash, PASSWORD_DEFAULT)) {
+            $new_pass_hash = password_hash($pass, PASSWORD_DEFAULT);
+            if ($new_pass_hash === false) return handleReturn(ControllerRet::unexpected_error);
+            if ($new_pass_hash === null) return handleReturn(ControllerRet::unexpected_error);
+            if ($db->changePasswordHash($user_id, $new_pass_hash) === null) return handleReturn(ControllerRet::unexpected_error);
+        }
 
         $jwt = JWT::init();
         if ($jwt === false) return handleReturn(ControllerRet::unexpected_error);
         $refresh_token = $jwt->createRefreshToken($user_id);
 
-        $arr_cookie_options = array(
-            'expires' => time() + 60 * 60 * 24 * 15,
-            'path' => '/token/',
-            'domain' => '',
-            'secure' => !$is_test_server,
-            'httponly' => true,
-            'samesite' => 'Strict'
+        if ($db->newToken(
+            $refresh_token->claims()->get("uid"),
+            $refresh_token->claims()->get(RegisteredClaims::ID),
+            $refresh_token->claims()->get(RegisteredClaims::EXPIRATION_TIME)
+        ) === null) return handleReturn(ControllerRet::unexpected_error);
+
+        $age = $refresh_token->claims()->get(RegisteredClaims::EXPIRATION_TIME)->getTimestamp();
+        $age -= $refresh_token->claims()->get(RegisteredClaims::ISSUED_AT)->getTimestamp();
+        header(
+            'Set-Cookie: RefreshToken=' . $refresh_token->toString()
+                . '; Max-Age=' . $age
+                . '; Path=/token/'
+                . (php_sapi_name() === "cli-server" ? '' : '; Secure')
+                . '; SameSite=Strict'
+                . '; HttpOnly'
+                . '; Partitioned'
+            , false
         );
-        setcookie('RefreshToken', $refresh_token->toString(), $arr_cookie_options);
 
         return handleReturn(ControllerRet::success);
     }
 
     public static function refreshRefreshToken(): null
     {
-        global $is_test_server;
         $db = DB::init();
         if ($db === null) return handleReturn(ControllerRet::unexpected_error);
 
         $jwt = JWT::init();
         if ($jwt === false) return handleReturn(ControllerRet::unexpected_error);
         $token = Controller::validateRefreshToken($db, $jwt);
-        if (is_a($token, "ControllerRet") === true) return handleReturn($token);
+        if (is_a($token, "Controller\ControllerRet") === true) return handleReturn($token);
         $new_token = $jwt->createRefreshToken($token->claims()->get("uid"));
 
-        // Expires after 15 days
-        if ($db->newInvalidRefreshToken($token->claims()->get("uid"), $token->claims()->get(RegisteredClaims::ID), '15 0:0:0') === null) {
+        if ($db->newToken(
+            $new_token->claims()->get("uid"),
+            $new_token->claims()->get(RegisteredClaims::ID),
+            $new_token->claims()->get(RegisteredClaims::EXPIRATION_TIME)
+        ) === null) return handleReturn(ControllerRet::unexpected_error);
+
+        if ($db->revokeToken($token->claims()->get("uid"), $token->claims()->get(RegisteredClaims::ID)) === null) {
             return handleReturn(ControllerRet::unexpected_error);
         }
 
-        $arr_cookie_options = array(
-            // 15 days
-            'expires' => time() + 60 * 60 * 24 * 15,
-            'path' => '/token/',
-            'domain' => '',
-            'secure' => !$is_test_server,
-            'httponly' => true,
-            'samesite' => 'Strict'
+        $age = $new_token->claims()->get(RegisteredClaims::EXPIRATION_TIME)->getTimestamp();
+        $age -= $new_token->claims()->get(RegisteredClaims::ISSUED_AT)->getTimestamp();
+        header(
+            'Set-Cookie: RefreshToken=' . $new_token->toString()
+                . '; Max-Age=' . $age
+                . '; Path=/token/'
+                . (php_sapi_name() === "cli-server" ? '' : '; Secure')
+                . '; SameSite=Strict'
+                . '; HttpOnly'
+                . '; Partitioned'
+            , false
         );
-        setcookie('RefreshToken', $new_token->toString(), $arr_cookie_options);
 
         return handleReturn(ControllerRet::success);
     }
 
     public static function getAccessToken(): null
     {
-        global $is_test_server;
         $db = DB::init();
         if ($db === null) return handleReturn(ControllerRet::unexpected_error);
 
         $jwt = JWT::init();
         if ($jwt === false) return handleReturn(ControllerRet::unexpected_error);
         $token = Controller::validateRefreshToken($db, $jwt);
-        if (is_a($token, "ControllerRet") === true) return handleReturn($token);
+        if (is_a($token, "Controller\ControllerRet") === true) return handleReturn($token);
         $new_access_token = $jwt->createAccessToken($token->claims()->get("uid"));
 
-        $arr_cookie_options = array(
-            // 10 minutes
-            'expires' => time() + 60 * 10,
-            'path' => '/',
-            'domain' => '',
-            'secure' => !$is_test_server,
-            'httponly' => true,
-            'samesite' => 'Strict'
+        if ($db->newToken(
+            $new_access_token->claims()->get("uid"),
+            $new_access_token->claims()->get(RegisteredClaims::ID),
+            $new_access_token->claims()->get(RegisteredClaims::EXPIRATION_TIME)
+        ) === null) return handleReturn(ControllerRet::unexpected_error);
+        $age = $new_access_token->claims()->get(RegisteredClaims::EXPIRATION_TIME)->getTimestamp();
+        $age -= $new_access_token->claims()->get(RegisteredClaims::ISSUED_AT)->getTimestamp();
+        header(
+            'Set-Cookie: AccessToken=' . $new_access_token->toString()
+                . '; Max-Age=' . $age
+                . '; Path=/'
+                . (php_sapi_name() === "cli-server" ? '' : '; Secure')
+                . '; SameSite=Strict'
+                . '; HttpOnly'
+                . '; Partitioned'
+            , false
         );
-        setcookie('AccessToken', $new_access_token->toString(), $arr_cookie_options);
 
         return handleReturn(ControllerRet::success);
     }
@@ -121,7 +151,7 @@ class Controller
         if ($disp_name === null) return handleReturn(ControllerRet::bad_request);
         $email = Controller::validateEmail(@$data->email);
         if ($email === null) return handleReturn(ControllerRet::bad_request);
-        $pass = Controller::validateString(@$data->pass, min_chars: 8, max_chars: 300);
+        $pass = Controller::validateString(@$data->pass, min_chars: 12, max_chars: 500);
         if ($pass === null) return handleReturn(ControllerRet::bad_request);
         $phone_number = Controller::validatePhoneNumber(@$data->phone_number, true);
         if ($phone_number === null) return handleReturn(ControllerRet::bad_request);
@@ -135,27 +165,56 @@ class Controller
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
         $pass_hash = password_hash($pass, PASSWORD_BCRYPT);
-        if ($db->createUser($disp_name, $email, $phone_number, $pass_hash) === false) return handleReturn(ControllerRet::unexpected_error);
+        if ($pass_hash === false) return handleReturn(ControllerRet::unexpected_error);
+        if ($pass_hash === null) return handleReturn(ControllerRet::unexpected_error);
+        if ($db->createUser($disp_name, $email, $phone_number, $pass_hash) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_created);
     }
 
     public static function deleteUser(): null
     {
+        $data = json_decode(file_get_contents("php://input"));
+        $pass = Controller::validateString(@$data->pass, min_chars: 12, max_chars: 500);
+        if ($pass === null) return handleReturn(ControllerRet::bad_request);
         $db = DB::init();
         if ($db === null) return handleReturn(ControllerRet::unexpected_error);
 
         $jwt = JWT::init();
         if ($jwt === false) return handleReturn(ControllerRet::unexpected_error);
         $token = Controller::validateAccessToken($db, $jwt);
-        if (is_a($token, "ControllerRet") === true) return handleReturn($token);
+        if (is_a($token, "Controller\ControllerRet") === true) return handleReturn($token);
+
+        $pass_hash = $db->getUserPassHash($token->claims()->get("uid"));
+        if ($pass_hash === null) return handleReturn(ControllerRet::unexpected_error);
+        if (password_verify($pass, $pass_hash) === false) return handleReturn(ControllerRet::unauthorised);
 
         if ($db->deleteUserViaId($token->claims()->get("uid")) === null) return handleReturn(ControllerRet::unexpected_error);
         if ($db->deleteOrphanedIntezmenys() === null) return handleReturn(ControllerRet::unexpected_error);
 
+        if ($db->revokeAllTokens($token->claims()->get("uid")) === null) return handleReturn(ControllerRet::unexpected_error);
+
         // Unset token cookies
-        setcookie('RefreshToken', "", 0);
-        setcookie('AccessToken', "", 0);
+        header(
+            'Set-Cookie: RefreshToken='
+                . '; Max-Age=0'
+                . '; Path=/token/'
+                . (php_sapi_name() === "cli-server" ? '' : '; Secure')
+                . '; SameSite=Strict'
+                . '; HttpOnly'
+                . '; Partitioned'
+            , false
+        );
+        header(
+            'Set-Cookie: AccessToken='
+                . '; Max-Age=0'
+                . '; Path=/'
+                . (php_sapi_name() === "cli-server" ? '' : '; Secure')
+                . '; SameSite=Strict'
+                . '; HttpOnly'
+                . '; Partitioned'
+            , false
+        );
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -172,9 +231,9 @@ class Controller
         $jwt = JWT::init();
         if ($jwt === false) return handleReturn(ControllerRet::unexpected_error);
         $token = Controller::validateAccessToken($db, $jwt);
-        if (is_a($token, "ControllerRet") === true) return handleReturn($token);
+        if (is_a($token, "Controller\ControllerRet") === true) return handleReturn($token);
 
-        if ($db->changeDisplayNameViaId($token->claims()->get("uid"), $new_disp_name) === null) return handleReturn(ControllerRet::unexpected_error);
+        if ($db->changeDisplayName($token->claims()->get("uid"), $new_disp_name) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -191,18 +250,19 @@ class Controller
         $jwt = JWT::init();
         if ($jwt === false) return handleReturn(ControllerRet::unexpected_error);
         $token = Controller::validateAccessToken($db, $jwt);
-        if (is_a($token, "ControllerRet") === true) return handleReturn($token);
+        if (is_a($token, "Controller\ControllerRet") === true) return handleReturn($token);
 
-        if ($db->changePhoneNumberViaId($token->claims()->get("uid"), $data->new_phone_number) === null) return handleReturn(ControllerRet::unexpected_error);
+        if ($db->changePhoneNumber($token->claims()->get("uid"), $data->new_phone_number) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
 
-    // TODO: Ask for the old password
     public static function changePassword(): null
     {
         $data = json_decode(file_get_contents("php://input"));
-        $new_pass = Controller::validateString(@$data->new_pass, min_chars: 8, max_chars: 300);
+        $pass = Controller::validateString(@$data->pass, min_chars: 12, max_chars: 500);
+        if ($pass === null) return handleReturn(ControllerRet::bad_request);
+        $new_pass = Controller::validateString(@$data->new_pass, min_chars: 12, max_chars: 500);
         if ($new_pass === null) return handleReturn(ControllerRet::bad_request);
 
         $db = DB::init();
@@ -211,9 +271,40 @@ class Controller
         $jwt = JWT::init();
         if ($jwt === false) return handleReturn(ControllerRet::unexpected_error);
         $token = Controller::validateAccessToken($db, $jwt);
-        if (is_a($token, "ControllerRet") === true) return handleReturn($token);
+        if (is_a($token, "Controller\ControllerRet") === true) return handleReturn($token);
 
-        if ($db->changePasswordHashViaId($token->claims()->get("uid"), password_hash($new_pass, PASSWORD_BCRYPT)) === null) return handleReturn(ControllerRet::unexpected_error);
+        $pass_hash = $db->getUserPassHash($token->claims()->get("uid"));
+        if ($pass_hash === null) return handleReturn(ControllerRet::unexpected_error);
+        if (password_verify($pass, $pass_hash) === false) return handleReturn(ControllerRet::unauthorised);
+
+        $new_pass_hash = password_hash($new_pass, PASSWORD_DEFAULT);
+        if ($new_pass_hash === false) return handleReturn(ControllerRet::unexpected_error);
+        if ($new_pass_hash === null) return handleReturn(ControllerRet::unexpected_error);
+        if ($db->changePasswordHash($token->claims()->get("uid"), $new_pass_hash) === null) return handleReturn(ControllerRet::unexpected_error);
+
+        if ($db->revokeAllTokens($token->claims()->get("uid")) === null) return handleReturn(ControllerRet::unexpected_error);
+
+        // Unset token cookies
+        header(
+            'Set-Cookie: RefreshToken='
+                . '; Max-Age=0'
+                . '; Path=/token/'
+                . (php_sapi_name() === "cli-server" ? '' : '; Secure')
+                . '; SameSite=Strict'
+                . '; HttpOnly'
+                . '; Partitioned'
+            , false
+        );
+        header(
+            'Set-Cookie: AccessToken='
+                . '; Max-Age=0'
+                . '; Path=/'
+                . (php_sapi_name() === "cli-server" ? '' : '; Secure')
+                . '; SameSite=Strict'
+                . '; HttpOnly'
+                . '; Partitioned'
+            , false
+        );
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -230,7 +321,7 @@ class Controller
         $jwt = JWT::init();
         if ($jwt === false) return handleReturn(ControllerRet::unexpected_error);
         $token = Controller::validateAccessToken($db, $jwt);
-        if (is_a($token, "ControllerRet") === true) return handleReturn($token);
+        if (is_a($token, "Controller\ControllerRet") === true) return handleReturn($token);
 
         if ($db->createIntezmeny($intezmeny_name, $token->claims()->get("uid")) === null) return handleReturn(ControllerRet::unexpected_error);
 
@@ -249,7 +340,7 @@ class Controller
         $jwt = JWT::init();
         if ($jwt === false) return handleReturn(ControllerRet::unexpected_error);
         $token = Controller::validateAccessToken($db, $jwt);
-        if (is_a($token, "ControllerRet") === true) return handleReturn($token);
+        if (is_a($token, "Controller\ControllerRet") === true) return handleReturn($token);
 
         $ret = $db->userExists($token->claims()->get("uid"));
         if ($ret === false) return handleReturn(ControllerRet::unauthorised);
@@ -275,7 +366,7 @@ class Controller
         $jwt = JWT::init();
         if ($jwt === false) return handleReturn(ControllerRet::unexpected_error);
         $token = Controller::validateAccessToken($db, $jwt);
-        if (is_a($token, "ControllerRet") === true) return handleReturn($token);
+        if (is_a($token, "Controller\ControllerRet") === true) return handleReturn($token);
 
         $ret = $db->getIntezmenys($token->claims()->get("uid"));
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
@@ -294,7 +385,7 @@ class Controller
         $jwt = JWT::init();
         if ($jwt === false) return handleReturn(ControllerRet::unexpected_error);
         $token = Controller::validateAccessToken($db, $jwt);
-        if (is_a($token, "ControllerRet") === true) return handleReturn($token);
+        if (is_a($token, "Controller\ControllerRet") === true) return handleReturn($token);
 
         $ret = $db->getProfile($token->claims()->get("uid"));
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
@@ -311,7 +402,7 @@ class Controller
         $email = Controller::validateEmail(@$data->email);
         if ($email === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, false);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->userExistsViaEmail($email);
@@ -332,7 +423,7 @@ class Controller
     {
         $data = json_decode(file_get_contents("php://input"));
         $ret = Controller::validateIntezmenyData($data, false);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id, $uid) = $ret;
 
         $ret = $db->isInviteAccepted($intezmeny_id, $uid);
@@ -352,7 +443,7 @@ class Controller
         $headcount = Controller::validateInteger(@$data->headcount, 5);
         if ($headcount === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->classExistsViaName($intezmeny_id, $name);
@@ -373,7 +464,7 @@ class Controller
         $name = Controller::validateString(@$data->name, max_chars: 200);
         if ($name === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->lessonExistsViaName($intezmeny_id, $name);
@@ -396,7 +487,7 @@ class Controller
         if ($class_id === null) return handleReturn(ControllerRet::bad_request);
         if ($class_id === false) $class_id = null;
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         if ($class_id !== null) {
@@ -424,7 +515,7 @@ class Controller
         $space = Controller::validateInteger(@$data->space, 5);
         if ($space === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->roomExistsViaName($intezmeny_id, $name);
@@ -447,7 +538,7 @@ class Controller
         if ($teacher_uid === null) return handleReturn(ControllerRet::bad_request);
         if ($teacher_uid === false) $teacher_uid = null;
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         if ($teacher_uid !== null) {
@@ -490,7 +581,7 @@ class Controller
         if ($room_id === null) return handleReturn(ControllerRet::bad_request);
         if ($room_id === false) $room_id = null;
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         if ($group_id !== null) {
@@ -542,7 +633,7 @@ class Controller
         if ($teacher_id === null) return handleReturn(ControllerRet::bad_request);
         if ($teacher_id === false) $teacher_id = null;
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         if ($lesson_id !== null) {
@@ -571,7 +662,7 @@ class Controller
         $file_contents = Controller::validateFileContents(@$data->file_contents);
         if ($file_contents === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->homeworkExists($intezmeny_id, $homework_id);
@@ -594,7 +685,7 @@ class Controller
         $class_id = Controller::validateInteger(@$data->class_id);
         if ($class_id === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->classExists($intezmeny_id, $class_id);
@@ -612,7 +703,7 @@ class Controller
         $lesson_id = Controller::validateInteger(@$data->lesson_id);
         if ($lesson_id === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->lessonExists($intezmeny_id, $lesson_id);
@@ -630,7 +721,7 @@ class Controller
         $group_id = Controller::validateInteger(@$data->group_id);
         if ($group_id === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->groupExists($intezmeny_id, $group_id);
@@ -648,7 +739,7 @@ class Controller
         $room_id = Controller::validateInteger(@$data->room_id);
         if ($room_id === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->roomExists($intezmeny_id, $room_id);
@@ -666,7 +757,7 @@ class Controller
         $teacher_id = Controller::validateInteger(@$data->teacher_id);
         if ($teacher_id === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->teacherExists($intezmeny_id, $teacher_id);
@@ -684,7 +775,7 @@ class Controller
         $timetable_element_id = Controller::validateInteger(@$data->timetable_element_id);
         if ($timetable_element_id === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->timetableElementExists($intezmeny_id, $timetable_element_id);
@@ -702,7 +793,7 @@ class Controller
         $homework_id = Controller::validateInteger(@$data->homework_id);
         if ($homework_id === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->homeworkExists($intezmeny_id, $homework_id);
@@ -726,7 +817,7 @@ class Controller
         $attachment_id = Controller::validateInteger(@$data->attachment_id);
         if ($attachment_id === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->attachmentExists($intezmeny_id, $attachment_id);
@@ -750,7 +841,7 @@ class Controller
         $name = Controller::validateString(@$data->name, max_chars: 200);
         if ($name === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->classExists($intezmeny_id, $class_id);
@@ -770,7 +861,7 @@ class Controller
         $name = Controller::validateString(@$data->name, max_chars: 200);
         if ($name === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->lessonExists($intezmeny_id, $lesson_id);
@@ -795,7 +886,7 @@ class Controller
         if ($class_id === null) return handleReturn(ControllerRet::bad_request);
         if ($class_id === false) $class_id = null;
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         if ($class_id !== null) {
@@ -825,7 +916,7 @@ class Controller
         $space = Controller::validateInteger(@$data->space, 5);
         if ($space === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->roomExists($intezmeny_id, $room_id);
@@ -850,7 +941,7 @@ class Controller
         if ($teacher_uid === null) return handleReturn(ControllerRet::bad_request);
         if ($teacher_uid === false) $teacher_uid = null;
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->teacherExists($intezmeny_id, $teacher_id);
@@ -903,7 +994,7 @@ class Controller
         if ($room_id === null) return handleReturn(ControllerRet::bad_request);
         if ($room_id === false) $room_id = null;
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->timetableElementExists($intezmeny_id, $element_id);
@@ -961,7 +1052,7 @@ class Controller
         if ($teacher_id === null) return handleReturn(ControllerRet::bad_request);
         if ($teacher_id === false) $teacher_id = null;
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->homeworkExists($intezmeny_id, $homework_id);
@@ -992,7 +1083,7 @@ class Controller
     public static function getClasses(): null
     {
         $ret = Controller::validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->getClasses($intezmeny_id);
@@ -1007,7 +1098,7 @@ class Controller
     public static function getLessons(): null
     {
         $ret = Controller::validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->getLessons($intezmeny_id);
@@ -1022,7 +1113,7 @@ class Controller
     public static function getGroups(): null
     {
         $ret = Controller::validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->getGroups($intezmeny_id);
@@ -1037,7 +1128,7 @@ class Controller
     public static function getRooms(): null
     {
         $ret = Controller::validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->getRooms($intezmeny_id);
@@ -1052,7 +1143,7 @@ class Controller
     public static function getTeachers(): null
     {
         $ret = Controller::validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->getTeachers($intezmeny_id);
@@ -1067,7 +1158,7 @@ class Controller
     public static function getTimetable(): null
     {
         $ret = Controller::validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->getTimetable($intezmeny_id);
@@ -1082,7 +1173,7 @@ class Controller
     public static function getHomeworks(): null
     {
         $ret = Controller::validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->getHomeworks($intezmeny_id);
@@ -1100,7 +1191,7 @@ class Controller
         $attachment_id = Controller::validateInteger(@$data->attachment_id);
         if ($attachment_id === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "ControllerRet") === true) return handleReturn($ret);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->attachmentExists($intezmeny_id, $attachment_id);
@@ -1133,7 +1224,7 @@ class Controller
         $jwt = JWT::init();
         if ($jwt === false) ControllerRet::unexpected_error;
         $token = Controller::validateAccessToken($db, $jwt);
-        if (is_a($token, "ControllerRet") === true) return $token;
+        if (is_a($token, "Controller\ControllerRet") === true) return $token;
 
         $ret = $db->partOfIntezmeny($intezmeny_id, $token->claims()->get("uid"), $invite_must_be_accepted);
         if ($ret === false) return ControllerRet::unauthorised;
@@ -1149,7 +1240,7 @@ class Controller
         $token = $jwt->parseToken($_COOKIE["RefreshToken"]);
         if ($token === null) return ControllerRet::bad_request;
 
-        $ret = $db->isRevokedRefreshToken($token->claims()->get("uid"), $token->claims()->get(RegisteredClaims::ID));
+        $ret = $db->isRevokedToken($token->claims()->get("uid"), $token->claims()->get(RegisteredClaims::ID));
         if ($ret === true) return ControllerRet::unauthorised;
         if ($ret === null) return ControllerRet::unexpected_error;
         if ($jwt->validateRefreshToken($token) === false) return ControllerRet::unauthorised;
@@ -1168,6 +1259,9 @@ class Controller
         $token = $jwt->parseToken($_COOKIE["AccessToken"]);
         if ($token === null) return ControllerRet::bad_request;
 
+        $ret = $db->isRevokedToken($token->claims()->get("uid"), $token->claims()->get(RegisteredClaims::ID));
+        if ($ret === true) return ControllerRet::unauthorised;
+        if ($ret === null) return ControllerRet::unexpected_error;
         if ($jwt->validateAccessToken($token) === false) return ControllerRet::unauthorised;
 
         $ret = $db->userExists($token->claims()->get("uid"));

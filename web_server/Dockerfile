@@ -1,9 +1,7 @@
 FROM debian:stable
 
-RUN apt-get update
-RUN apt-get install php-mysql -y
-RUN apt-get install 7zip -y
-RUN apt-get install composer -y
+RUN apt-get --update full-upgrade
+RUN apt-get install php-mysql 7zip composer -y
 
 VOLUME /web_server
 

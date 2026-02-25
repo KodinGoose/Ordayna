@@ -27,7 +27,11 @@ sudo systemctl restart nginx php8.4-fpm
 cd ../web_server
 composer require lcobucci/jwt lcobucci/clock ramsey/uuid
 rm -f config.php
-printf "<?php\n\ndeclare(strict_types=1);\n\nclass Config {\n" | tee -a config.php > /dev/null
+printf "<?php\n\n" | tee -a config.php > /dev/null
+printf "declare(strict_types=1);\n\n" | tee -a config.php > /dev/null
+printf "namespace Config;\n\n" | tee -a config.php > /dev/null
+printf "class Config\n" | tee -a config.php > /dev/null
+printf "{\n" | tee -a config.php > /dev/null
 printf "    public static ?string \$database_address = \"localhost\";\n" | tee -a config.php > /dev/null
 printf "    public static ?string \$database_username = \"ordayna_main\";\n" | tee -a config.php > /dev/null
 printf "    public static ?string \$database_password = \"%s\";\n" "$db_password" | tee -a config.php > /dev/null

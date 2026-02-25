@@ -7,6 +7,11 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 def handleApiError(message: str, response: requests.Response, expected_res_code, expected_res_body: str):
     global test_count
     global tests_passed
+
+    test_count += 1
+    # Delete line and move cursor to collumn 0
+    print("\x1b[2K\x1b[G", end="")
+
     passed = True
     if (response.status_code != expected_res_code or response.text != expected_res_body):
         text = "\n        ".join(response.text.split("\n"))
@@ -26,19 +31,14 @@ def handleApiError(message: str, response: requests.Response, expected_res_code,
             passed = False
 
     if (passed): tests_passed += 1
+    print(f"Next test: {test_count + 1}", end="", flush=True)
 
 def testEndpoint(message: str, method: str, endpoint_path: str, cookies, payload: dict(), expected_res_code, expected_res_body):
-    global test_count
-    test_count += 1
-
     response = requests.request(method, URL + endpoint_path, json=payload, cookies=cookies, verify=False)
     handleApiError(message, response, expected_res_code, expected_res_body)
     return response
 
 def testEndpointNoErrorHandling(method: str, endpoint_path: str, cookies, payload: dict()):
-    global test_count
-    test_count += 1
-
     return requests.request(method, URL + endpoint_path, json=payload, cookies=cookies, verify=False)
 
 def testId(base_message: str, method: str, endpoint_path: str, base_payload: dict(), jar: dict, id_name: str, null_allowed: bool, success_code: int, is_sensitive: bool):
@@ -87,8 +87,8 @@ def testEmail(base_message: str, method: str, endpoint_path: str, base_payload: 
 
 def testPassword(base_message: str, method: str, endpoint_path: str, base_payload: dict, jar: dict, pass_name: str, is_new_pass: bool):
     testString(base_message, method, endpoint_path, base_payload, jar, pass_name, False, 200)
-    base_payload[pass_name] = "tester_"
-    testEndpoint(f"{base_message}, {pass_name} length shorter than 8", method, endpoint_path, jar, base_payload, 400, "Bad request")
+    base_payload[pass_name] = "tester_pass"
+    testEndpoint(f"{base_message}, {pass_name} length shorter than 12", method, endpoint_path, jar, base_payload, 400, "Bad request")
     if (not is_new_pass):
         base_payload[pass_name] = "incorrect_tester_pass"
         testEndpoint(f"{base_message}, incorrect {pass_name}", method, endpoint_path, jar, base_payload, 403, "Unauthorised")
@@ -155,6 +155,7 @@ def main():
     global test_count
     global tests_passed
 
+    print(f"Next test: {test_count + 1}", end="", flush=True)
     createUser()
     tokens()
     changeUserData()
@@ -169,20 +170,22 @@ def main():
 
     cleanup()
 
+    # Delete line and move cursor to start of collumn 0
+    print("\x1b[2K\x1b[G", end="")
     print(f"Tests passed: {tests_passed}/{test_count}")
 
 
 def createUser():
-    testString("Create user", "POST", "/user/create", {"email": "tester@test.com", "phone_number": "123456789012345", "pass": "tester_pass"}, {}, "disp_name", False, 201)
-    testEmail("Create user", "POST", "/user/create", {"disp_name": "tester", "phone_number": "123456789012345", "pass": "tester_pass"}, {}, False, 201)
+    testString("Create user", "POST", "/user/create", {"email": "tester@test.com", "phone_number": "123456789012345", "pass": "tester_pass+"}, {}, "disp_name", False, 201)
+    testEmail("Create user", "POST", "/user/create", {"disp_name": "tester", "phone_number": "123456789012345", "pass": "tester_pass+"}, {}, False, 201)
     testPassword("Create user", "POST", "/user/create", {"disp_name": "tester", "email": "tester@test.com", "phone_number": "123456789012345"}, {}, "pass", True)
-    testPhoneNumber("Create user", "POST", "/user/create", {"disp_name": "tester", "email": "tester_no_phone@test.com", "pass": "tester_pass"}, {}, "phone_number", True, 201)
+    testPhoneNumber("Create user", "POST", "/user/create", {"disp_name": "tester", "email": "tester_no_phone@test.com", "pass": "tester_pass+"}, {}, "phone_number", True, 201)
     testEndpoint("Create user, method is not POST", "PATCH", "/user/create", "",
-                 {"disp_name": "tester", "email": "tester@test.com", "phone_number": "123456789012345", "pass": "tester_pass"}, 405, "")
+                 {"disp_name": "tester", "email": "tester@test.com", "phone_number": "123456789012345", "pass": "tester_pass+"}, 405, "")
     testEndpoint("Create user", "POST", "/user/create", "",
-                 {"disp_name": "tester", "email": "tester@test.com", "phone_number": "123456789012345", "pass": "tester_pass"}, 201, "")
+                 {"disp_name": "tester", "email": "tester@test.com", "phone_number": "123456789012345", "pass": "tester_pass+"}, 201, "")
     testEndpoint("Create user, user already exists", "POST", "/user/create", "",
-                 {"disp_name": "tester", "email": "tester@test.com", "phone_number": "123456789012345", "pass": "tester_pass"}, 400, "Already exists")
+                 {"disp_name": "tester", "email": "tester@test.com", "phone_number": "123456789012345", "pass": "tester_pass+"}, 400, "Already exists")
 
 
 def tokens():
@@ -193,11 +196,11 @@ def tokens():
     global reuse_refresh_jar
 
     refresh_jar = testEndpoint("Get refresh token", "POST", "/token/get_refresh_token", "",
-                 {"email": "tester@test.com", "pass": "tester_pass"}, 200, "").cookies
-    testEmail("Get refresh_token", "POST", "/token/get_refresh_token", {"pass": "tester_pass"}, {}, False, 200)
+                 {"email": "tester@test.com", "pass": "tester_pass+"}, 200, "").cookies
+    testEmail("Get refresh_token", "POST", "/token/get_refresh_token", {"pass": "tester_pass+"}, {}, False, 200)
     testPassword("Get refresh token", "POST", "/token/get_refresh_token", {"email": "tester@test.com"}, {}, "pass", False)
     testEndpoint("Get refresh token, method is not POST", "PATCH", "/token/get_refresh_token", "",
-                 {"email": "tester@test.com", "pass": "tester_pass"}, 405, "")
+                 {"email": "tester@test.com", "pass": "tester_pass+"}, 405, "")
 
     reuse_refresh_jar = refresh_jar.copy()
     refresh_jar = testEndpoint("Refresh refresh token", "GET", "/token/refresh_refresh_token", refresh_jar, {}, 200, "").cookies
@@ -221,29 +224,49 @@ def tokens():
 
 
 def changeUserData():
+    global refresh_jar
+    global reuse_refresh_jar
+    global wrong_refresh_jar
     global access_jar
     global wrong_access_jar
 
-    testEndpoint("Change display name", "POST", "/user/change/display_name", access_jar,
-                 {"new_disp_name": "testerer"}, 204, "")
+    testEndpoint("Change display name", "POST", "/user/change/display_name", access_jar, {"new_disp_name": "testerer"}, 204, "")
     testString("Change display name", "POST", "/user/change/display_name", {}, access_jar, "new_disp_name", False, 204)
     testToken("Change display name", "POST", "/user/change/display_name", {"new_disp_name": "testerer"}, wrong_access_jar)
-    testEndpoint("Change display name, method is not POST", "PATCH", "/user/change/display_name", access_jar,
-                 {"new_disp_name": "testerer"}, 405, "")
+    testEndpoint("Change display name, method is not POST", "PATCH", "/user/change/display_name", access_jar, {"new_disp_name": "testerer"}, 405, "")
 
-    testEndpoint("Change phone number", "POST", "/user/change/phone_number", access_jar,
-                 {"new_phone_number": "12345"}, 204, "")
+    testEndpoint("Change phone number", "POST", "/user/change/phone_number", access_jar, {"new_phone_number": "12345"}, 204, "")
     testPhoneNumber("Change phone number", "POST", "/user/change/phone_number", {}, access_jar, "new_phone_name", False, 204)
     testToken("Change phone number", "POST", "/user/change/phone_number", {"new_phone_number": "12345"}, wrong_access_jar)
-    testEndpoint("Change phone number, method is not POST", "PATCH", "/user/change/phone_number", access_jar,
-                 {"new_phone_number": "12345"}, 405, "")
+    testEndpoint("Change phone number, method is not POST", "PATCH", "/user/change/phone_number", access_jar, {"new_phone_number": "12345"}, 405, "")
 
-    testEndpoint("Change password", "POST", "/user/change/password", access_jar, {"new_pass": "tmp_tester_pass"}, 204, "")
-    testEndpoint("Change password back", "POST", "/user/change/password", access_jar, {"new_pass": "tester_pass"}, 204, "")
-    testPassword("Change password", "POST", "/user/change/password", {}, access_jar, "new_pass", True)
-    testToken("Change password", "POST", "/user/change/password", {"new_pass": "tester_pass"}, wrong_access_jar)
-    testEndpoint("Change password, method is not POST", "PATCH", "/user/change/password", access_jar,
-                 {"new_pass": "tester_pass"}, 405, "")
+    testEndpoint("Change password", "POST", "/user/change/password", access_jar, {"pass": "tester_pass+", "new_pass": "tmp_tester_pass"}, 204, "")
+    refresh_jar = testEndpoint("Get refresh token", "POST", "/token/get_refresh_token", "",
+                 {"email": "tester@test.com", "pass": "tmp_tester_pass"}, 200, "").cookies
+    access_jar = testEndpoint("Get access token", "GET", "/token/get_access_token", refresh_jar, {}, 200, "").cookies
+    testEndpoint("Change password back", "POST", "/user/change/password", access_jar, {"pass": "tmp_tester_pass", "new_pass": "tester_pass+"}, 204, "")
+    refresh_jar = testEndpoint("Get refresh token", "POST", "/token/get_refresh_token", "",
+                 {"email": "tester@test.com", "pass": "tester_pass+"}, 200, "").cookies
+    reuse_refresh_jar = refresh_jar.copy()
+    refresh_jar = testEndpoint("Refresh refresh token", "GET", "/token/refresh_refresh_token", refresh_jar, {}, 200, "").cookies
+    wrong_access_jar = refresh_jar.copy()
+    for cookie in wrong_access_jar:
+        if cookie.name == 'RefreshToken':
+            cookie.name = "AccessToken"
+            cookie.path = "/"
+            break
+
+    access_jar = testEndpoint("Get access token", "GET", "/token/get_access_token", refresh_jar, {}, 200, "").cookies
+    wrong_refresh_jar = access_jar.copy()
+    for cookie in wrong_refresh_jar:
+        if cookie.name == 'AccessToken':
+            cookie.name = "RefreshToken"
+            cookie.path = "/"
+            break
+    testPassword("Change password", "POST", "/user/change/password", {"new_pass": "tester_pass+"}, access_jar, "pass", False)
+    testPassword("Change password", "POST", "/user/change/password", {"pass": "tester_pass+"}, access_jar, "new_pass", True)
+    testToken("Change password", "POST", "/user/change/password", {"pass": "tester_pass+", "new_pass": "tester_pass+"}, wrong_access_jar)
+    testEndpoint("Change password, method is not POST", "PATCH", "/user/change/password", access_jar, {"pass": "tester_pass+", "new_pass": "tester_pass+"}, 405, "")
 
 
 def createIntezmeny():
@@ -251,19 +274,16 @@ def createIntezmeny():
     global wrong_access_jar
     global intezmeny_id
 
-    testEndpoint("Create intezmeny", "POST", "/create_intezmeny", access_jar,
-                 {"intezmeny_name": "tester_intezmeny"}, 201, "")
+    testEndpoint("Create intezmeny", "POST", "/create_intezmeny", access_jar, {"intezmeny_name": "tester_intezmeny"}, 201, "")
     testString("Create intezmeny", "POST", "/create_intezmeny", {}, access_jar, "intezmeny_name", False, 201)
     testToken("Create intezmeny", "POST", "/create_intezmeny", {"intezmeny_name": "tester_intezmeny"}, wrong_access_jar)
-    testEndpoint("Create intezmeny, method is not POST", "PATCH", "/create_intezmeny", access_jar,
-                 {"intezmeny_name": "tester_intezmeny"}, 405, "")
+    testEndpoint("Create intezmeny, method is not POST", "PATCH", "/create_intezmeny", access_jar, {"intezmeny_name": "tester_intezmeny"}, 405, "")
 
     response = testEndpointNoErrorHandling("GET", "/get_intezmenys", access_jar, {})
     intezmeny_id = response.json()[len(response.json()) - 1][0]
     handleApiError("Get intezmenys", response, 200, f"[[{intezmeny_id},\"tester_intezmeny\"]]")
     testToken("Get intezmenys", "GET", "/get_intezmenys", {}, wrong_access_jar)
-    testEndpoint("Get intezmenys, method is not GET", "PATCH", "/get_intezmenys", access_jar,
-                 {}, 405, "")
+    testEndpoint("Get intezmenys, method is not GET", "PATCH", "/get_intezmenys", access_jar, {}, 405, "")
 
 
 def inviteEndpoints():
@@ -275,9 +295,9 @@ def inviteEndpoints():
     global intezmeny_id
 
     testEndpoint("Create teacher user", "POST", "/user/create", {},
-                 {"disp_name": "tester", "email": "tester_teacher@test.com", "phone_number": "123456789012345", "pass": "tester_pass"}, 201, "")
+                 {"disp_name": "tester", "email": "tester_teacher@test.com", "phone_number": "123456789012345", "pass": "tester_pass+"}, 201, "")
     teacher_refresh_jar = testEndpoint("Get teacher refresh token", "POST", "/token/get_refresh_token", {},
-                 {"email": "tester_teacher@test.com", "pass": "tester_pass"}, 200, "").cookies
+                 {"email": "tester_teacher@test.com", "pass": "tester_pass+"}, 200, "").cookies
     teacher_access_jar = testEndpoint("Get teacher access token", "GET", "/token/get_access_token", teacher_refresh_jar, {}, 200, "").cookies
 
     testId("Invite user", "POST", "/intezmeny/user/invite", {"email": "tester_teacher@test.com"}, access_jar, "intezmeny_id", False, 200, True)
@@ -774,10 +794,10 @@ def deleteUser():
     global access_jar
     global wrong_access_jar
 
-    testToken("Delete user", "DELETE", "/user/delete", {}, wrong_access_jar)
-    testEndpoint("Delete user, method is not DELETE", "PATCH", "/user/delete", access_jar, {}, 405, "")
-    testEndpoint("Delete user", "DELETE", "/user/delete", access_jar, {}, 204, "")
-    testEndpoint("Delete user, user does not exist", "DELETE", "/user/delete", access_jar, {}, 403, "Unauthorised")
+    testToken("Delete user", "DELETE", "/user/delete", {"pass": "tester_pass+"}, wrong_access_jar)
+    testEndpoint("Delete user, method is not DELETE", "PATCH", "/user/delete", access_jar, {"pass": "tester_pass+"}, 405, "")
+    testEndpoint("Delete user", "DELETE", "/user/delete", access_jar, {"pass": "tester_pass+"}, 204, "")
+    testEndpoint("Delete user, user does not exist", "DELETE", "/user/delete", access_jar, {"pass": "tester_pass+"}, 403, "Unauthorised")
 
 
 def cleanup():
@@ -787,10 +807,10 @@ def cleanup():
     no_phone_access_jar = dict()
 
     no_phone_refresh_jar = testEndpoint("Get refresh token for no phone user", "POST", "/token/get_refresh_token", "",
-                                        {"email": "tester_no_phone@test.com", "pass": "tester_pass"}, 200, "").cookies
+                                        {"email": "tester_no_phone@test.com", "pass": "tester_pass+"}, 200, "").cookies
     no_phone_access_jar = testEndpoint("Get access token for no phone user", "GET", "/token/get_access_token", no_phone_refresh_jar, {}, 200, "").cookies
-    testEndpoint("Delete no phone number user", "DELETE", "/user/delete", no_phone_access_jar, {}, 204, "")
-    testEndpoint("Delete teacher user", "DELETE", "/user/delete", teacher_access_jar, {}, 204, "")
+    testEndpoint("Delete no phone number user", "DELETE", "/user/delete", no_phone_access_jar, {"pass": "tester_pass+"}, 204, "")
+    testEndpoint("Delete teacher user", "DELETE", "/user/delete", teacher_access_jar, {"pass": "tester_pass+"}, 204, "")
 
 
 main()
