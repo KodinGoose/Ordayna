@@ -10,7 +10,6 @@ use Lcobucci\JWT\UnencryptedToken;
 require_once "db.php";
 require_once "jwt.php";
 
-static $is_test_server = php_sapi_name() === "cli-server";
 /** 20 mebibytes */
 static $max_file_size = 1024 * 1024 * 20;
 
@@ -18,8 +17,6 @@ class Controller
 {
     public static function getRefreshToken(): null
     {
-        global $is_test_server;
-
         $data = json_decode(file_get_contents("php://input"));
         $email = Controller::validateEmail(@$data->email);
         if ($email === null) return handleReturn(ControllerRet::bad_request);
@@ -63,10 +60,11 @@ class Controller
             'Set-Cookie: RefreshToken=' . $refresh_token->toString()
                 . '; Max-Age=' . $age
                 . '; Path=/token/'
-                . ($is_test_server === true ? '' : '; Secure')
+                . (php_sapi_name() === "cli-server" ? '' : '; Secure')
                 . '; SameSite=Strict'
                 . '; HttpOnly'
                 . '; Partitioned'
+            , false
         );
 
         return handleReturn(ControllerRet::success);
@@ -74,7 +72,6 @@ class Controller
 
     public static function refreshRefreshToken(): null
     {
-        global $is_test_server;
         $db = DB::init();
         if ($db === null) return handleReturn(ControllerRet::unexpected_error);
 
@@ -100,10 +97,11 @@ class Controller
             'Set-Cookie: RefreshToken=' . $new_token->toString()
                 . '; Max-Age=' . $age
                 . '; Path=/token/'
-                . ($is_test_server === true ? '' : '; Secure')
+                . (php_sapi_name() === "cli-server" ? '' : '; Secure')
                 . '; SameSite=Strict'
                 . '; HttpOnly'
                 . '; Partitioned'
+            , false
         );
 
         return handleReturn(ControllerRet::success);
@@ -111,7 +109,6 @@ class Controller
 
     public static function getAccessToken(): null
     {
-        global $is_test_server;
         $db = DB::init();
         if ($db === null) return handleReturn(ControllerRet::unexpected_error);
 
@@ -132,10 +129,11 @@ class Controller
             'Set-Cookie: AccessToken=' . $new_access_token->toString()
                 . '; Max-Age=' . $age
                 . '; Path=/'
-                . ($is_test_server === true ? '' : '; Secure')
+                . (php_sapi_name() === "cli-server" ? '' : '; Secure')
                 . '; SameSite=Strict'
                 . '; HttpOnly'
                 . '; Partitioned'
+            , false
         );
 
         return handleReturn(ControllerRet::success);
@@ -192,8 +190,26 @@ class Controller
         if ($db->revokeAllTokens($token->claims()->get("uid")) === null) return handleReturn(ControllerRet::unexpected_error);
 
         // Unset token cookies
-        setcookie('RefreshToken', "", 0);
-        setcookie('AccessToken', "", 0);
+        header(
+            'Set-Cookie: RefreshToken='
+                . '; Max-Age=0'
+                . '; Path=/token/'
+                . (php_sapi_name() === "cli-server" ? '' : '; Secure')
+                . '; SameSite=Strict'
+                . '; HttpOnly'
+                . '; Partitioned'
+            , false
+        );
+        header(
+            'Set-Cookie: AccessToken='
+                . '; Max-Age=0'
+                . '; Path=/'
+                . (php_sapi_name() === "cli-server" ? '' : '; Secure')
+                . '; SameSite=Strict'
+                . '; HttpOnly'
+                . '; Partitioned'
+            , false
+        );
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -264,8 +280,26 @@ class Controller
         if ($db->revokeAllTokens($token->claims()->get("uid")) === null) return handleReturn(ControllerRet::unexpected_error);
 
         // Unset token cookies
-        setcookie('RefreshToken', "", 0);
-        setcookie('AccessToken', "", 0);
+        header(
+            'Set-Cookie: RefreshToken='
+                . '; Max-Age=0'
+                . '; Path=/token/'
+                . (php_sapi_name() === "cli-server" ? '' : '; Secure')
+                . '; SameSite=Strict'
+                . '; HttpOnly'
+                . '; Partitioned'
+            , false
+        );
+        header(
+            'Set-Cookie: AccessToken='
+                . '; Max-Age=0'
+                . '; Path=/'
+                . (php_sapi_name() === "cli-server" ? '' : '; Secure')
+                . '; SameSite=Strict'
+                . '; HttpOnly'
+                . '; Partitioned'
+            , false
+        );
 
         return handleReturn(ControllerRet::success_no_content);
     }
