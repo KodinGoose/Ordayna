@@ -38,22 +38,20 @@ function generateContentForCreate() {
 }
 
 let db=0;
+let dataArray = []; 
 
-function lockData(){
-    if (orarend.innerHTML.trim() !== "") {
-        id.setAttribute('max',db)
-    }
-    if (terem.value!="" && tanar.value!="" && targy.value!="" ){
-        curr_id="ora_"+db;
-        let ora_span=document.createElement("span");
-        ora_span.setAttribute('id',curr_id)
-        ora_span.innerHTML= db+" "+ terem.value+" "+ tanar.value+" "+ targy.value +" "+ day.value+"<br>";
-        orarend.appendChild(ora_span)
-        db++;
+function lockData() {
+    if (terem.value !== "" && tanar.value !== "" && targy.value !== "") {
         
+        let entry = `${db}. ${terem.value} | ${tanar.value} | ${targy.value} | ${day.value}`;
+        dataArray.push(entry);
+        orarend.innerHTML = dataArray.map(item => `<option value="${db}">${item}</option>`).join("");
+        db++;
+    } else {
+        err.innerHTML="Hiányos adatok"
     }
-   
 }
+   
 
 function addItem(e, z) {
     document.getElementById(z).value = e.options[e.selectedIndex].getAttribute("value");
