@@ -6,15 +6,21 @@ namespace Controller;
 
 require_once "db.php";
 require_once "jwt.php";
-require_once "user.php";
+require_once "models/user.php";
+require_once "models/class.php";
+require_once "models/group.php";
+require_once "models/room.php";
 
+use Class_\Class_;
 use DB\DB;
 use JWT\JWT;
 use DateTimeImmutable;
+use Group\Group;
 use ValueError;
 
 use Lcobucci\JWT\Token\RegisteredClaims;
 use Lcobucci\JWT\UnencryptedToken;
+use Room\Room;
 use User\User;
 
 /** 20 mebibytes */
@@ -450,14 +456,42 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->classExistsViaName($intezmeny_id, $name);
+        $ret = Class_::classExistsViaName($db, $intezmeny_id, $name);
         if ($ret === true) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
-        $ret = $db->groupExistsViaName($intezmeny_id, $name);
+        $ret = Group::groupExistsViaName($db, $intezmeny_id, $name);
         if ($ret === true) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if ($db->createClass($intezmeny_id, $name, $headcount) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Class_::createClass($db, $intezmeny_id, $name, $headcount) === null) return handleReturn(ControllerRet::unexpected_error);
+
+        return handleReturn(ControllerRet::success_created);
+    }
+
+    public static function createGroup(): null
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $name = Controller::validateString(@$data->name, max_chars: 200);
+        if ($name === null) return handleReturn(ControllerRet::bad_request);
+        $headcount = Controller::validateInteger(@$data->headcount, 5);
+        if ($headcount === null) return handleReturn(ControllerRet::bad_request);
+        $class_id = Controller::validateInteger(@$data->class_id, null_allowed: true);
+        if ($class_id === null) return handleReturn(ControllerRet::bad_request);
+        if ($class_id === false) $class_id = null;
+        $ret = Controller::validateIntezmenyData($data, true);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
+        list($db, $intezmeny_id) = $ret;
+
+        if ($class_id !== null) {
+            $ret = Class_::classExists($db, $intezmeny_id, $class_id);
+            if ($ret === false) return handleReturn(ControllerRet::bad_request);
+            if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
+        }
+        $ret = Group::groupExistsViaName($db, $intezmeny_id, $name);
+        if ($ret === true) return handleReturn(ControllerRet::bad_request);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
+
+        if (Group::createGroup($db, $intezmeny_id, $name, $headcount, $class_id) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_created);
     }
@@ -480,34 +514,6 @@ class Controller
         return handleReturn(ControllerRet::success_created);
     }
 
-    public static function createGroup(): null
-    {
-        $data = json_decode(file_get_contents("php://input"));
-        $name = Controller::validateString(@$data->name, max_chars: 200);
-        if ($name === null) return handleReturn(ControllerRet::bad_request);
-        $headcount = Controller::validateInteger(@$data->headcount, 5);
-        if ($headcount === null) return handleReturn(ControllerRet::bad_request);
-        $class_id = Controller::validateInteger(@$data->class_id, null_allowed: true);
-        if ($class_id === null) return handleReturn(ControllerRet::bad_request);
-        if ($class_id === false) $class_id = null;
-        $ret = Controller::validateIntezmenyData($data, true);
-        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
-
-        if ($class_id !== null) {
-            $ret = $db->classExists($intezmeny_id, $class_id);
-            if ($ret === false) return handleReturn(ControllerRet::bad_request);
-            if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
-        }
-        $ret = $db->groupExistsViaName($intezmeny_id, $name);
-        if ($ret === true) return handleReturn(ControllerRet::bad_request);
-        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
-
-        if ($db->createGroup($intezmeny_id, $name, $headcount, $class_id) === null) return handleReturn(ControllerRet::unexpected_error);
-
-        return handleReturn(ControllerRet::success_created);
-    }
-
     public static function createRoom(): null
     {
         $data = json_decode(file_get_contents("php://input"));
@@ -522,11 +528,11 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->roomExistsViaName($intezmeny_id, $name);
+        $ret = Room::roomExistsViaName($db, $intezmeny_id, $name);
         if ($ret === true) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if ($db->createRoom($intezmeny_id, $name, $type, $space) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Room::createRoom($db, $intezmeny_id, $name, $type, $space) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_created);
     }
@@ -589,7 +595,7 @@ class Controller
         list($db, $intezmeny_id) = $ret;
 
         if ($group_id !== null) {
-            $ret = $db->groupExists($intezmeny_id, $group_id);
+            $ret = Group::groupExists($db, $intezmeny_id, $group_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
@@ -604,7 +610,7 @@ class Controller
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
         if ($room_id !== null) {
-            $ret = $db->roomExists($intezmeny_id, $room_id);
+            $ret = Room::roomExists($db, $intezmeny_id, $room_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
@@ -692,11 +698,11 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->classExists($intezmeny_id, $class_id);
+        $ret = Class_::classExists($db, $intezmeny_id, $class_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if ($db->deleteClass($intezmeny_id, $class_id) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Class_::deleteClass($db, $intezmeny_id, $class_id) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -728,11 +734,11 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->groupExists($intezmeny_id, $group_id);
+        $ret = Group::groupExists($db, $intezmeny_id, $group_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if ($db->deleteGroup($intezmeny_id, $group_id) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Group::deleteGroup($db, $intezmeny_id, $group_id) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -746,11 +752,11 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->roomExists($intezmeny_id, $room_id);
+        $ret = Room::roomExists($db, $intezmeny_id, $room_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if ($db->deleteRoom($intezmeny_id, $room_id) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Room::deleteRoom($db, $intezmeny_id, $room_id) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -848,11 +854,11 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->classExists($intezmeny_id, $class_id);
+        $ret = Class_::classExists($db, $intezmeny_id, $class_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if ($db->updateClass($intezmeny_id, $class_id, $name) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Class_::updateClass($db, $intezmeny_id, $class_id, $name) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -894,15 +900,15 @@ class Controller
         list($db, $intezmeny_id) = $ret;
 
         if ($class_id !== null) {
-            $ret = $db->classExists($intezmeny_id, $class_id);
+            $ret = Class_::classExists($db, $intezmeny_id, $class_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
-        $ret = $db->groupExists($intezmeny_id, $group_id);
+        $ret = Group::groupExists($db, $intezmeny_id, $group_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if ($db->updateGroup($intezmeny_id, $group_id, $name, $headcount, $class_id) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Group::updateGroup($db, $intezmeny_id, $group_id, $name, $headcount, $class_id) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -923,11 +929,11 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->roomExists($intezmeny_id, $room_id);
+        $ret = Room::roomExists($db, $intezmeny_id, $room_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if ($db->updateRoom($intezmeny_id, $room_id, $name, $type, $space) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Room::updateRoom($db, $intezmeny_id, $room_id, $name, $type, $space) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -1005,7 +1011,7 @@ class Controller
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         if ($group_id !== null) {
-            $ret = $db->groupExists($intezmeny_id, $group_id);
+            $ret = Group::groupExists($db, $intezmeny_id, $group_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
@@ -1020,7 +1026,7 @@ class Controller
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
         if ($room_id !== null) {
-            $ret = $db->roomExists($intezmeny_id, $room_id);
+            $ret = Room::roomExists($db, $intezmeny_id, $room_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
@@ -1090,7 +1096,22 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->getClasses($intezmeny_id);
+        $ret = Class_::getClasses($db, $intezmeny_id);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
+
+        header('Content-Type: application/json');
+        echo json_encode($ret);
+
+        return handleReturn(ControllerRet::success);
+    }
+
+    public static function getGroups(): null
+    {
+        $ret = Controller::validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
+        list($db, $intezmeny_id) = $ret;
+
+        $ret = Group::getGroups($db, $intezmeny_id);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
         header('Content-Type: application/json');
@@ -1114,28 +1135,13 @@ class Controller
         return handleReturn(ControllerRet::success);
     }
 
-    public static function getGroups(): null
-    {
-        $ret = Controller::validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
-        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
-
-        $ret = $db->getGroups($intezmeny_id);
-        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
-
-        header('Content-Type: application/json');
-        echo json_encode($ret);
-
-        return handleReturn(ControllerRet::success);
-    }
-
     public static function getRooms(): null
     {
         $ret = Controller::validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->getRooms($intezmeny_id);
+        $ret = Room::getRooms($db, $intezmeny_id);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
         header('Content-Type: application/json');

@@ -99,32 +99,6 @@ class DB
         }
     }
 
-    function classExists(int $intezmeny_id, int $class_id): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM class WHERE id = ?)',
-                array($class_id)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function classExistsViaName(int $intezmeny_id, string $class_name): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM class WHERE name = ?)',
-                array($class_name)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
     function lessonExists(int $intezmeny_id, int $lesson_id): bool|null
     {
         try {
@@ -145,58 +119,6 @@ class DB
             return ($ret = $this->handleQueryResult($this->connection->execute_query(
                 'SELECT EXISTS(SELECT * FROM lesson WHERE name = ?);',
                 array($lesson_name)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function groupExists(int $intezmeny_id, int $group_id): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM group_ WHERE id = ?)',
-                array($group_id)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function groupExistsViaName(int $intezmeny_id, string $group_name): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM group_ WHERE name = ?)',
-                array($group_name)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function roomExists(int $intezmeny_id, int $room_id): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM room WHERE id = ?)',
-                array($room_id)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function roomExistsViaName(int $intezmeny_id, string $room_name): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM room WHERE name = ?)',
-                array($room_name)
             ))) === null ? null : $ret[0][0] === 1;
         } catch (Exception) {
             return $this->logError(false);
@@ -295,19 +217,6 @@ class DB
         }
     }
 
-    function createClass(int $intezmeny_id, string $name, int $headcount): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL newClass(?, ?)',
-                array($name, $headcount)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
     function createLesson(int $intezmeny_id, string $name): true|null
     {
         try {
@@ -315,32 +224,6 @@ class DB
             return $this->handleQueryResult($this->connection->execute_query(
                 'CALL newLesson(?)',
                 array($name)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function createGroup(int $intezmeny_id, string $name, int $headcount, int|null $class_id): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL newGroup(?, ?, ?)',
-                array($name, $headcount, $class_id)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function createRoom(int $intezmeny_id, string $name, string|null $type, int $space): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL newRoom(?, ?, ?)',
-                array($name, $type, $space)
             ));
         } catch (Exception) {
             return $this->logError(false);
@@ -420,19 +303,6 @@ class DB
         }
     }
 
-    function deleteClass(int $intezmeny_id, int $class_id): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL delClass(?)',
-                array($class_id)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
     function deleteLesson(int $intezmeny_id, int $lesson_id): true|null
     {
         try {
@@ -440,32 +310,6 @@ class DB
             return $this->handleQueryResult($this->connection->execute_query(
                 'CALL delLesson(?)',
                 array($lesson_id)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function deleteGroup(int $intezmeny_id, int $group_id): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL delGroup(?)',
-                array($group_id)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function deleteRoom(int $intezmeny_id, int $room_id): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL delRoom(?)',
-                array($room_id)
             ));
         } catch (Exception) {
             return $this->logError(false);
@@ -537,19 +381,6 @@ class DB
         }
     }
 
-    function updateClass(int $intezmeny_id, int $class_id, string $name): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL modClass(?, ?)',
-                array($class_id, $name)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
     function updateLesson(int $intezmeny_id, int $lesson_id, string $name): true|null
     {
         try {
@@ -557,32 +388,6 @@ class DB
             return $this->handleQueryResult($this->connection->execute_query(
                 'CALL modLesson(?, ?)',
                 array($lesson_id, $name)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function updateGroup(int $intezmeny_id, int $group_id, string $name, int $headcount, int|null $class_id): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL modGroup(?, ?, ?, ?)',
-                array($group_id, $name, $headcount, $class_id)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function updateRoom(int $intezmeny_id, int $room_id, string $name, string|null $type, int $space): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL modRoom(?, ?, ?, ?)',
-                array($room_id, $name, $type, $space)
             ));
         } catch (Exception) {
             return $this->logError(false);
@@ -658,46 +463,11 @@ class DB
         }
     }
 
-    function getClasses(int $intezmeny_id): array|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->query("SELECT id, name FROM class"));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function getGroups(int $intezmeny_id): array|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->query(
-                '
-                    SELECT group_.id, group_.name, group_.headcount, class.id, class.name
-                    FROM group_ LEFT JOIN class ON group_.class_id = class.id
-                '
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
     function getLessons(int $intezmeny_id): array|null
     {
         try {
             if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
             return $this->handleQueryResult($this->connection->query("SELECT id, name FROM lesson"));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function getRooms(int $intezmeny_id): array|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->query("SELECT id, name, room_type, space FROM room"));
         } catch (Exception) {
             return $this->logError(false);
         }

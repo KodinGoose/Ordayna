@@ -660,7 +660,7 @@ def intezmenyGetEndpoints():
     global intezmeny_id
 
     testEndpoint("Get classes", "POST", "/intezmeny/get/classes", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[["1","test_class_updated"]]')
+                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[{"id":1,"name":"test_class_updated"}]')
     testId("Get classes", "POST", "/intezmeny/get/classes", {}, access_jar, "intezmeny_id", False, 200, True)
     testToken("Get classes", "POST", "/intezmeny/get/classes", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Get classes, method not POST", "PATCH", "/intezmeny/get/classes", access_jar,
@@ -674,14 +674,14 @@ def intezmenyGetEndpoints():
                  {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
 
     testEndpoint("Get groups", "POST", "/intezmeny/get/groups", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[["1","test_group_updated","40","1","test_class_updated"],["2","test_group_updated_no_class_id","40",null,null],["3","test_group","30","1","test_class_updated"]]')
+                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[{"id":1,"name":"test_group_updated","headcount":40,"class":{"id":1,"name":"test_class_updated"}},{"id":2,"name":"test_group_updated_no_class_id","headcount":40,"class":null},{"id":3,"name":"test_group","headcount":30,"class":{"id":1,"name":"test_class_updated"}}]')
     testId("Get groups", "POST", "/intezmeny/get/groups", {}, access_jar, "intezmeny_id", False, 200, True)
     testToken("Get groups", "POST", "/intezmeny/get/groups", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Get groups, method not POST", "PATCH", "/intezmeny/get/groups", access_jar,
                  {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
 
     testEndpoint("Get rooms", "POST", "/intezmeny/get/rooms", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[["1","test_room_updated","test_updated","40"],["2","test_room_updated_no_type",null,"40"]]')
+                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[{"id":1,"name":"test_room_updated","type":"test_updated","space":40},{"id":2,"name":"test_room_updated_no_type","type":null,"space":40}]')
     testId("Get rooms", "POST", "/intezmeny/get/rooms", {}, access_jar, "intezmeny_id", False, 200, True)
     testToken("Get rooms", "POST", "/intezmeny/get/rooms", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Get rooms, method not POST", "PATCH", "/intezmeny/get/rooms", access_jar,

@@ -22,10 +22,10 @@ CREATE OR REPLACE TABLE lesson (
 );
 
 CREATE OR REPLACE TABLE room (
-    id        INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    name      VARCHAR(200) UNIQUE NOT NULL,
-    room_type VARCHAR(200),
-    space     SMALLINT UNSIGNED NOT NULL
+    id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name  VARCHAR(200) UNIQUE NOT NULL,
+    type  VARCHAR(200),
+    space SMALLINT UNSIGNED NOT NULL
 );
 
 CREATE OR REPLACE TABLE teacher (
@@ -134,14 +134,14 @@ BEGIN
     DELETE FROM lesson WHERE id=in_id;
 END;
 
-CREATE OR REPLACE PROCEDURE newRoom ( IN in_name VARCHAR(200), IN in_room_type VARCHAR(200), IN in_space INT UNSIGNED )
+CREATE OR REPLACE PROCEDURE newRoom ( IN in_name VARCHAR(200), IN in_type VARCHAR(200), IN in_space INT UNSIGNED )
 BEGIN
-    INSERT INTO room (name, room_type, space) VALUES (in_name, in_room_type, in_space);
+    INSERT INTO room (name, type, space) VALUES (in_name, in_type, in_space);
 END;
 
-CREATE OR REPLACE PROCEDURE modRoom ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_room_type VARCHAR(200), IN in_space INT UNSIGNED )
+CREATE OR REPLACE PROCEDURE modRoom ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_type VARCHAR(200), IN in_space INT UNSIGNED )
 BEGIN
-    UPDATE room SET name=in_name, room_type=in_room_type, space=in_space WHERE in_id=id;
+    UPDATE room SET name=in_name, type=in_type, space=in_space WHERE in_id=id;
 END;
 
 CREATE OR REPLACE PROCEDURE delRoom ( IN in_id INT UNSIGNED )
