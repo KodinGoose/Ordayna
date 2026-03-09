@@ -65,10 +65,13 @@
                     
                 </select>
                 <div class="input-div">
-                    <input type="number" min="0" max="0" step="1" id="get_id" placeholder="Enter a number">   
+                    <select id="get_id" style="display: none;">
+
+                    </select>
                     <button onclick="deleteData()"><-</button>
                     <button onclick="lockData()">-></button>
                     <input type="text" id="targy" readonly><input type="text" id="terem" readonly><input type="text" id="tanar" readonly>
+                    <br><button onclick="">done</button><button onclick="">all clear</button>
                 </div>
             </div>
         </div>
@@ -111,5 +114,4 @@
 
 
 <script src="js/time_create.js"></script>
-
 </body>
