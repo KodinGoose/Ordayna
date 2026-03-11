@@ -22,6 +22,7 @@ const terem = document.getElementById('terem');
 terem.value = "";
 
 
+
 const err = document.getElementById("err");
 
 err.innerHTML = "";
@@ -33,6 +34,7 @@ function generateContentForCreate() {
     room_tag.innerHTML = room.map(t => `<option value="${t}" >${t}</option>`).join("");
 
     clas_tag.innerHTML = clas.map(t => `<option value="${t}">${t}</option>`).join("");
+
 
     console.log("works")
 }
@@ -65,19 +67,21 @@ function lockData() {
         terem.value = "";
         tanar.value = "";
         targy.value = "";
+        addId()
     } else {
         err.innerHTML = "Hiányos adatok";
     }
-    addId()
 }
 
 
 function addItem(e, z) {
     document.getElementById(z).value = e.options[e.selectedIndex].getAttribute("value");
+    e.selectedIndex=-1;
 }
 
 function addId() {
     id.innerHTML = id_arr.map(t => `<option value="${t}" >${t}</option>`).join("");
+    id.style="display:block"
 
 }
 
@@ -97,10 +101,24 @@ function deleteData() {
         err.innerHTML = "Nincs kiválasztott ID elem!";
         err.style.color = "red";
     }
+    if(id_arr.length===0){
+        id.style="display:none"
+    }
 }
 
-function allClear(){
+function allClear() {
+    db = 1;
+    id_arr = [];
+    dataArray = [];
+    orarend.innerHTML = "";
+    terem.value = "";
+    targy.value = "";
+    tanar.value = "";
+    err.innerHTML = "";
+    id.style="display:none"
 
 }
-function done(){}
+function done(){
+    //loads to database
+}
 
