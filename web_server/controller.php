@@ -195,6 +195,45 @@ class Controller
         return handleReturn(ControllerRet::success_created);
     }
 
+    public static function logout(): null
+    {
+        $db = DB::init();
+        if ($db === null) return handleReturn(ControllerRet::unexpected_error);
+
+        $jwt = JWT::init();
+        if ($jwt === false) return handleReturn(ControllerRet::unexpected_error);
+        $token = Controller::validateAccessToken($db, $jwt);
+        if (is_a($token, "Controller\ControllerRet") === true) return handleReturn($token);
+
+        if (User::revokeAllTokens($db, $token->claims()->get("uid")) === null) {
+            return handleReturn(ControllerRet::unexpected_error);
+        }
+
+        // Unset token cookies
+        header(
+            'Set-Cookie: RefreshToken='
+                . '; Max-Age=0'
+                . '; Path=/token/'
+                . (php_sapi_name() === "cli-server" ? '' : '; Secure')
+                . '; SameSite=Strict'
+                . '; HttpOnly'
+                . '; Partitioned',
+            false
+        );
+        header(
+            'Set-Cookie: AccessToken='
+                . '; Max-Age=0'
+                . '; Path=/'
+                . (php_sapi_name() === "cli-server" ? '' : '; Secure')
+                . '; SameSite=Strict'
+                . '; HttpOnly'
+                . '; Partitioned',
+            false
+        );
+
+        return handleReturn(ControllerRet::success);
+    }
+
     public static function deleteUser(): null
     {
         $data = json_decode(file_get_contents("php://input"));

@@ -35,7 +35,7 @@ $req_uri = explode("?", $_SERVER["REQUEST_URI"])[0];
 
 if ($req_uri === '/' or $req_uri === '') {
     route("GET", function () {
-        header("Location: /resource/index.html", true, 308);
+        header("Location: /resource/login.html", true, 308);
     });
 }
 
@@ -45,6 +45,7 @@ match ($req_uri) {
     '/token/get_access_token' => route('GET', [$controller, 'getAccessToken']),
     '/user/create' => route('POST', [$controller, 'createUser']),
     '/user/profile' => route('GET', [$controller, 'getProfile']),
+    '/user/logout' => route('GET', [$controller, 'logout']),
     '/user/delete' => route('DELETE', [$controller, 'deleteUser']),
     '/user/change/display_name' => route('POST', [$controller, 'changeDisplayName']),
     '/user/change/phone_number' => route('POST', [$controller, 'changePhoneNumber']),
@@ -86,6 +87,6 @@ match ($req_uri) {
     '/intezmeny/get/homeworks' => route('POST', [$controller, 'getHomeworks']),
     '/intezmeny/get/attachment' => route('POST', [$controller, 'getAttachment']),
     default => route("GET", function () {
-        header("Location: /resource/index.html", true, 308);
+        header("Location: /resource/login.html", true, 308);
     }),
 };
