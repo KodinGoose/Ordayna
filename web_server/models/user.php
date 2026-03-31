@@ -16,14 +16,16 @@ class User
     public string $display_name;
     public string $email;
     public ?string $phone_number;
+    public ?string $role;
     // Hash is intentionally not stored here
 
-    public function __construct(int $id, string $display_name, string $email, ?string $phone_number)
+    public function __construct(int $id, string $display_name, string $email, ?string $phone_number, ?string $role)
     {
         $this->id = $id;
         $this->display_name = $display_name;
         $this->email = $email;
         $this->phone_number = $phone_number;
+        $this->role = $role;
     }
 
     public static function getUser(DB $db, int $id): User|null
@@ -33,7 +35,7 @@ class User
             return ($ret = $db->handleQueryResult($db->connection->execute_query(
                 'SELECT id, display_name, email, phone_number FROM users WHERE id = ?',
                 array($id)
-            ))) === null ? null : new User($ret[0][0], $ret[0][1], $ret[0][2], $ret[0][3]);
+            ))) === null ? null : new User($ret[0][0], $ret[0][1], $ret[0][2], $ret[0][3], null);
         } catch (Exception) {
             return $db->logError(false);
         }
@@ -47,7 +49,30 @@ class User
             return ($ret = $db->handleQueryResult($db->connection->execute_query(
                 'SELECT id, display_name, email, phone_number FROM users WHERE email = ?',
                 array($email)
-            ))) === null ? null : new User($ret[0][0], $ret[0][1], $ret[0][2], $ret[0][3]);
+            ))) === null ? null : new User($ret[0][0], $ret[0][1], $ret[0][2], $ret[0][3], null);
+        } catch (Exception) {
+            return $db->logError(false);
+        }
+    }
+
+    public static function getAllIntezmenyUsers(DB $db, int $intezmeny_id): array|null
+    {
+        try {
+            if ($db->logError($db->connection->select_db('ordayna_main_db')) === null) return null;
+            $ret = $db->handleQueryResult($db->connection->execute_query(
+                '
+                    SELECT users.id, users.display_name, users.email, users.phone_number, intezmeny_users.role_ FROM intezmeny_users
+                    LEFT JOIN users ON users.id = intezmeny_users.users_id
+                    WHERE intezmeny_users.intezmeny_id = ? AND intezmeny_users.invite_accepted = TRUE
+                ',
+                array($intezmeny_id)
+            ));
+            if ($ret === null) return null;
+            $arr = array();
+            for ($i = 0; $i < count($ret); $i++) {
+                array_push($arr, new User((int) $ret[$i][0], $ret[$i][1], $ret[$i][2], $ret[$i][3], $ret[$i][4]));
+            }
+            return $arr;
         } catch (Exception) {
             return $db->logError(false);
         }
@@ -279,20 +304,6 @@ class User
         }
     }
 
-    /** Only returns true if the invite exists and is accepted */
-    public static function isInviteAccepted(DB $db, int $intezmeny_id, int $uid): bool|null
-    {
-        try {
-            if ($db->logError($db->connection->select_db('ordayna_main_db')) === null) return null;
-            return ($ret = $db->handleQueryResult($db->connection->execute_query(
-                'SELECT EXISTS (SELECT * FROM intezmeny_users WHERE intezmeny_id = ? AND users_id = ? AND invite_accepted = TRUE)',
-                array($intezmeny_id, $uid)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $db->logError(false);
-        }
-    }
-
     public static function acceptInvite(DB $db, int $intezmeny_id, int $uid): true|null
     {
         try {
@@ -304,5 +315,39 @@ class User
         } catch (Exception) {
             return $db->logError(false);
         }
+    }
+
+    public static function getInvites(DB $db, int $uid): array|null
+    {
+        try {
+            if ($db->logError($db->connection->select_db('ordayna_main_db')) === null) return null;
+            $ret = $db->handleQueryResult($db->connection->execute_query(
+                '
+                    SELECT intezmeny_users.intezmeny_id, intezmeny.name FROM intezmeny_users
+                    LEFT JOIN intezmeny ON intezmeny.id = intezmeny_users.intezmeny_id
+                    WHERE intezmeny_users.users_id = ? AND intezmeny_users.invite_accepted = FALSE
+                ',
+                array($uid)
+            ));
+            if ($ret === null) return null;
+            $arr = array();
+            for ($i = 0; $i < count($ret); $i++) {
+                array_push($arr, new Invite((int) $ret[$i][0], $ret[$i][1]));
+            }
+            return $arr;
+        } catch (Exception) {
+            return $db->logError(false);
+        }
+    }
+}
+
+class Invite {
+    public int $intezmeny_id;
+    public string $intezmeny_name;
+
+    public function __construct(int $intezmeny_id, string $intezmeny_name)
+    {
+        $this->intezmeny_id = $intezmeny_id;
+        $this->intezmeny_name = $intezmeny_name;
     }
 }

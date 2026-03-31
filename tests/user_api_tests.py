@@ -300,24 +300,31 @@ def inviteEndpoints():
                  {"email": "tester_teacher@test.com", "pass": "tester_pass+"}, 200, "").cookies
     teacher_access_jar = testEndpoint("Get teacher access token", "GET", "/token/get_access_token", teacher_refresh_jar, {}, 200, "").cookies
 
-    testId("Invite user", "POST", "/intezmeny/user/invite", {"email": "tester_teacher@test.com"}, access_jar, "intezmeny_id", False, 200, True)
-    testEmail("Invite user", "POST", "/intezmeny/user/invite", {"intezmeny_id": f"{intezmeny_id}"}, access_jar, False, 200)
+    testId("Invite user", "POST", "/intezmeny/user/invite", {"email": "tester_teacher@test.com"}, access_jar, "intezmeny_id", False, 204, True)
+    testEmail("Invite user", "POST", "/intezmeny/user/invite", {"intezmeny_id": f"{intezmeny_id}"}, access_jar, False, 204)
     testToken("Invite user", "POST", "/intezmeny/user/invite", {"intezmeny_id": f"{intezmeny_id}", "email": "tester_teacher@test.com"}, wrong_access_jar)
     testEndpoint("Invite user, method is not POST", "PATCH", "/intezmeny/user/invite", access_jar,
                  {"intezmeny_id": f"{intezmeny_id}", "email": "tester_teacher@test.com"}, 405, "")
-    testEndpoint("Invite user", "POST", "/intezmeny/user/invite", access_jar, {"intezmeny_id": f"{intezmeny_id}", "email": "tester_teacher@test.com"}, 200, "")
+    testEndpoint("Invite user", "POST", "/intezmeny/user/invite", access_jar, {"intezmeny_id": f"{intezmeny_id}", "email": "tester_teacher@test.com"}, 204, "")
     testEndpoint("Invite user, already invited", "POST", "/intezmeny/user/invite", access_jar, {"intezmeny_id": f"{intezmeny_id}", "email": "tester_teacher@test.com"}, 400, "Already exists")
 
-    testId("Accept invite", "POST", "/intezmeny/user/accept_invite", {}, teacher_access_jar, "intezmeny_id", False, 200, True)
+    testToken("Get invites", "GET", "/intezmeny/user/get_invites", {}, wrong_access_jar)
+    testEndpoint("Get invites, method is not GET", "PATCH", "/intezmeny/user/get_invites", teacher_access_jar, {}, 405, "")
+    response = testEndpointNoErrorHandling("GET", "/intezmeny/user/get_invites", teacher_access_jar, {})
+    handleApiError("Get invites", response, 200, '[{"intezmeny_id":' + f'{response.json()[0]["intezmeny_id"]}' + ',"intezmeny_name":"tester_intezmeny"}]')
+
+    testId("Accept invite", "POST", "/intezmeny/user/accept_invite", {}, teacher_access_jar, "intezmeny_id", False, 204, True)
     testToken("Accept invite", "POST", "/intezmeny/user/accept_invite", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Accept invite, method is not POST", "PATCH", "/intezmeny/user/accept_invite", teacher_access_jar, {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
-    testEndpoint("Accept invite", "POST", "/intezmeny/user/accept_invite", teacher_access_jar, {"intezmeny_id": f"{intezmeny_id}"}, 200, "")
-    testEndpoint("Accept invite, already accepted", "POST", "/intezmeny/user/accept_invite", teacher_access_jar, {"intezmeny_id": f"{intezmeny_id}"}, 403, "Unauthorised")
+    testEndpoint("Accept invite", "POST", "/intezmeny/user/accept_invite", teacher_access_jar, {"intezmeny_id": f"{intezmeny_id}"}, 204, "")
+    testEndpoint("Accept invite, already accepted", "POST", "/intezmeny/user/accept_invite", teacher_access_jar, {"intezmeny_id": f"{intezmeny_id}"}, 204, "")
+    
+    testEndpoint("Get invites, invite accepted", "GET", "/intezmeny/user/get_invites", teacher_access_jar, {}, 200, "[]")
 
     testToken("Get profile", "GET", "/user/profile", {}, wrong_access_jar)
     testEndpoint("Get profile, method is not GET", "PATCH", "/user/profile", teacher_access_jar, {}, 405, "")
     response = testEndpointNoErrorHandling("GET", "/user/profile", teacher_access_jar, {})
-    handleApiError("Get profile", response, 200, '{"id":' + f'{response.json()["id"]}' + ',"display_name":"tester","email":"tester_teacher@test.com","phone_number":"123456789012345"}')
+    handleApiError("Get profile", response, 200, '{"id":' + f'{response.json()["id"]}' + ',"display_name":"tester","email":"tester_teacher@test.com","phone_number":"123456789012345","role":null}')
     teacher_uid = response.json()["id"]
 
 
@@ -330,14 +337,12 @@ def intezmenyCreateEndpoints():
     testId("Create class", "POST", "/intezmeny/create/class", {"name": "test_class", "headcount": "30"}, access_jar, "intezmeny_id", False, 201, True)
     testString("Create class", "POST", "/intezmeny/create/class", {"intezmeny_id": f"{intezmeny_id}", "headcount": "30"}, access_jar, "name", False, 201)
     testNumber("Create class", "POST", "/intezmeny/create/class", {"intezmeny_id": f"{intezmeny_id}", "name": "test_class"}, access_jar, "headcount", False, 201)
-    testToken("Create class", "POST", "/intezmeny/create/class",
-              {"intezmeny_id": f"{intezmeny_id}", "name": "test_class", "headcount": "30"}, wrong_access_jar)
-    testEndpoint("Create class, method not POST", "PATCH", "/intezmeny/create/class", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "name": "test_class", "headcount": "30"}, 405, "")
+    testToken("Create class", "POST", "/intezmeny/create/class", {"intezmeny_id": f"{intezmeny_id}", "name": "test_class", "headcount": "30"}, wrong_access_jar)
+    testEndpoint("Create class, method not POST", "PATCH", "/intezmeny/create/class", access_jar, {"intezmeny_id": f"{intezmeny_id}", "name": "test_class", "headcount": "30"}, 405, "")
     testEndpoint("Create class", "POST", "/intezmeny/create/class", access_jar,
                  {"intezmeny_id": f"{intezmeny_id}", "name": "test_class", "headcount": "30"}, 201, "")
     testEndpoint("Create class, already exists", "POST", "/intezmeny/create/class", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "name": "test_class", "headcount": "30"}, 400, "Bad request")
+                 {"intezmeny_id": f"{intezmeny_id}", "name": "test_class", "headcount": "30"}, 400, "Already exists")
 
     testId("Create lesson", "POST", "/intezmeny/create/lesson", {"name": "test_lesson"}, access_jar, "intezmeny_id", False, 201, True)
     testString("Create lesson", "POST", "/intezmeny/create/lesson", {"intezmeny_id": f"{intezmeny_id}"}, access_jar, "name", False, 201)
@@ -348,7 +353,7 @@ def intezmenyCreateEndpoints():
     testEndpoint("Create lesson", "POST", "/intezmeny/create/lesson", access_jar,
                  {"intezmeny_id": f"{intezmeny_id}", "name": "test_lesson"}, 201, "")
     testEndpoint("Create lesson, already exists", "POST", "/intezmeny/create/lesson", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "name": "test_lesson"}, 400, "Bad request")
+                 {"intezmeny_id": f"{intezmeny_id}", "name": "test_lesson"}, 400, "Already exists")
 
     testId("Create group", "POST", "/intezmeny/create/group", {"name": "test_group", "headcount": "30", "class_id": "1"}, access_jar, "intezmeny_id", False, 201, True)
     testString("Create group", "POST", "/intezmeny/create/group", {"intezmeny_id": f"{intezmeny_id}", "headcount": "30", "class_id": "1"}, access_jar, "name", False, 201)
@@ -361,7 +366,7 @@ def intezmenyCreateEndpoints():
     testEndpoint("Create group", "POST", "/intezmeny/create/group", access_jar,
                  {"intezmeny_id": f"{intezmeny_id}", "name": "test_group", "headcount": "30", "class_id": "1"}, 201, "")
     testEndpoint("Create group, group already exists", "POST", "/intezmeny/create/group", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "name": "test_group", "headcount": "30", "class_id": "1"}, 400, "Bad request")
+                 {"intezmeny_id": f"{intezmeny_id}", "name": "test_group", "headcount": "30", "class_id": "1"}, 400, "Already exists")
 
     testId("Create room", "POST", "/intezmeny/create/room", {"type": "test", "name": "test_room", "space": "30"}, access_jar, "intezmeny_id", False, 201, True)
     testString("Create room", "POST", "/intezmeny/create/room", {"intezmeny_id": f"{intezmeny_id}", "name": "test_room_no_type", "space": "30"}, access_jar, "type", True, 201)
@@ -374,7 +379,7 @@ def intezmenyCreateEndpoints():
     testEndpoint("Create room", "POST", "/intezmeny/create/room", access_jar,
                  {"intezmeny_id": f"{intezmeny_id}", "type": "test", "name": "test_room", "space": "30"}, 201, "")
     testEndpoint("Create room, room already exists", "POST", "/intezmeny/create/room", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "type": "test", "name": "test_room", "space": "30"}, 400, "Bad request")
+                 {"intezmeny_id": f"{intezmeny_id}", "type": "test", "name": "test_room", "space": "30"}, 400, "Already exists")
 
     testId("Create teacher", "POST", "/intezmeny/create/teacher",
            {"name": "test_teacher", "job": "test", "teacher_uid": f"{teacher_uid}"},
@@ -666,6 +671,12 @@ def intezmenyGetEndpoints():
     global access_jar
     global wrong_access_jar
     global intezmeny_id
+
+    response = testEndpointNoErrorHandling("POST", "/intezmeny/user/get_all", access_jar, {"intezmeny_id": f"{intezmeny_id}"})
+    handleApiError("Get users", response, 200, '[{"id":' + f'{response.json()[0]["id"]}' + ',"display_name":"testerer","email":"tester@test.com","phone_number":null,"role":"admin"},{"id":' + f'{response.json()[1]["id"]}' + ',"display_name":"tester","email":"tester_teacher@test.com","phone_number":"123456789012345","role":"teacher"}]')
+    testId("Get users", "POST", "/intezmeny/user/get_all", {}, access_jar, "intezmeny_id", False, 200, True)
+    testToken("Get users", "POST", "/intezmeny/user/get_all", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
+    testEndpoint("Get users, method not POST", "PATCH", "/intezmeny/user/get_all", access_jar, {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
 
     testEndpoint("Get classes", "POST", "/intezmeny/get/classes", access_jar,
                  {"intezmeny_id": f"{intezmeny_id}"}, 200, '[{"id":1,"name":"test_class_updated"}]')

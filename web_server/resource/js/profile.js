@@ -25,6 +25,17 @@ async function loadUserData() {
       document.getElementById("intezmeny_list").innerHTML += result[i].id + ": " + "<a onclick='loadIntezmeny(" + result[i].id + ")'>" + result[i].name + "</a>" + "<br>";
     }
   }
+  {
+    const response = await fetch(url + "intezmeny/user/get_invites", { method: "GET" });
+    if (response.ok !== true) {
+      return;
+    }
+    const result = await response.json();
+    document.getElementById("invites").innerHTML = "";
+    for (let i = 0; i < result.length; i++) {
+      document.getElementById("invites").innerHTML += `<option value="${result[i].intezmeny_id}">${result[i].intezmeny_id}: ${result[i].intezmeny_name}</option>`;
+    }
+  }
 }
 
 async function loadIntezmeny(id) {
@@ -156,6 +167,25 @@ async function newIntezmeny() {
   }
 }
 
+async function acceptInvite() {
+  if (typeof document.getElementById("invites").options[document.getElementById("invites").selectedIndex] === 'undefined') {
+    return;
+  }
+  const intezmeny_id = document.getElementById("invites").options[document.getElementById("invites").selectedIndex].getAttribute("value");
+
+  const response = await fetch(url + "intezmeny/user/accept_invite", {
+    method: "POST",
+    body: JSON.stringify({
+      intezmeny_id: intezmeny_id,
+    })
+  });
+  if (response.ok === false) {
+    return;
+  }
+  document.getElementById("invites").selectedIndex = 0;
+  await loadUserData();
+}
+
 window.hide_show = hide_show;
 window.changePfp = changePfp;
 window.signout = signout;
@@ -167,3 +197,4 @@ window.preparePassChange = preparePassChange;
 window.passChange = passChange;
 window.newIntezmeny = newIntezmeny;
 window.loadIntezmeny = loadIntezmeny;
+window.acceptInvite = acceptInvite;

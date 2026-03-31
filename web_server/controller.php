@@ -466,8 +466,11 @@ class Controller
         if ($email === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, false);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = User::userExistsViaEmail($db, $email);
         if ($ret === false) return handleReturn(ControllerRet::not_found);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
@@ -479,7 +482,7 @@ class Controller
 
         if (User::inviteUser($db, $intezmeny_id, $invited_user->id) === null) return handleReturn(ControllerRet::unexpected_error);
 
-        return handleReturn(ControllerRet::success);
+        return handleReturn(ControllerRet::success_no_content);
     }
 
     public static function acceptInviteToIntezmeny(): null
@@ -489,11 +492,46 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id, $uid) = $ret;
 
-        $ret = User::isInviteAccepted($db, $intezmeny_id, $uid);
-        if ($ret === true) return handleReturn(ControllerRet::unauthorised);
+        if (User::acceptInvite($db, $intezmeny_id, $uid) === null) return handleReturn(ControllerRet::unexpected_error);
+
+        return handleReturn(ControllerRet::success_no_content);
+    }
+
+    public static function getInvites(): null
+    {
+        $db = DB::init();
+        if ($db === null) return handleReturn(ControllerRet::unexpected_error);
+
+        $jwt = JWT::init();
+        if ($jwt === false) ControllerRet::unexpected_error;
+        $token = Controller::validateAccessToken($db, $jwt);
+        if (is_a($token, "Controller\ControllerRet") === true) return handleReturn($token);
+
+        $ret = User::getInvites($db, $token->claims()->get("uid"));
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
+        
+        header('Content-Type: application/json');
+        echo json_encode($ret);
+
+        return handleReturn(ControllerRet::success);
+    }
+
+    public static function getAllIntezmenyUsers(): null
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $ret = Controller::validateIntezmenyData($data, true);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
+        list($db, $intezmeny_id, $uid) = $ret;
+
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if (User::acceptInvite($db, $intezmeny_id, $uid) === null) return handleReturn(ControllerRet::unexpected_error);
+        $ret = User::getAllIntezmenyUsers($db, $intezmeny_id);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
+        
+        header('Content-Type: application/json');
+        echo json_encode($ret);
 
         return handleReturn(ControllerRet::success);
     }
@@ -507,13 +545,16 @@ class Controller
         if ($headcount === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Class_::classExistsViaName($db, $intezmeny_id, $name);
-        if ($ret === true) return handleReturn(ControllerRet::bad_request);
+        if ($ret === true) return handleReturn(ControllerRet::already_exists);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Group::groupExistsViaName($db, $intezmeny_id, $name);
-        if ($ret === true) return handleReturn(ControllerRet::bad_request);
+        if ($ret === true) return handleReturn(ControllerRet::already_exists);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
         if (Class_::createClass($db, $intezmeny_id, $name, $headcount) === null) return handleReturn(ControllerRet::unexpected_error);
@@ -533,15 +574,18 @@ class Controller
         if ($class_id === false) $class_id = null;
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         if ($class_id !== null) {
             $ret = Class_::classExists($db, $intezmeny_id, $class_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
         $ret = Group::groupExistsViaName($db, $intezmeny_id, $name);
-        if ($ret === true) return handleReturn(ControllerRet::bad_request);
+        if ($ret === true) return handleReturn(ControllerRet::already_exists);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
         if (Group::createGroup($db, $intezmeny_id, $name, $headcount, $class_id) === null) return handleReturn(ControllerRet::unexpected_error);
@@ -556,10 +600,13 @@ class Controller
         if ($name === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Lesson::lessonExistsViaName($db, $intezmeny_id, $name);
-        if ($ret === true) return handleReturn(ControllerRet::bad_request);
+        if ($ret === true) return handleReturn(ControllerRet::already_exists);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
         if (Lesson::createLesson($db, $intezmeny_id, $name) === null) return handleReturn(ControllerRet::unexpected_error);
@@ -579,10 +626,13 @@ class Controller
         if ($space === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Room::roomExistsViaName($db, $intezmeny_id, $name);
-        if ($ret === true) return handleReturn(ControllerRet::bad_request);
+        if ($ret === true) return handleReturn(ControllerRet::already_exists);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
         if (Room::createRoom($db, $intezmeny_id, $name, $type, $space) === null) return handleReturn(ControllerRet::unexpected_error);
@@ -602,8 +652,11 @@ class Controller
         if ($teacher_uid === false) $teacher_uid = null;
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         if ($teacher_uid !== null) {
             $ret = User::partOfIntezmeny($db, $intezmeny_id, $teacher_uid, true);
             if ($ret === false) return handleReturn(ControllerRet::unauthorised);
@@ -645,8 +698,11 @@ class Controller
         if ($room_id === false) $room_id = null;
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         if ($group_id !== null) {
             $ret = Group::groupExists($db, $intezmeny_id, $group_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
@@ -700,8 +756,11 @@ class Controller
         if ($teacher_id === false) $teacher_id = null;
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isTeacher($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         if ($lesson_id !== null) {
             $ret = Lesson::lessonExists($db, $intezmeny_id, $lesson_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
@@ -729,8 +788,11 @@ class Controller
         if ($file_contents === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isTeacher($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Homework::homeworkExists($db, $intezmeny_id, $homework_id);
         if ($ret === false) return handleReturn(ControllerRet::unauthorised);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
@@ -752,8 +814,11 @@ class Controller
         if ($class_id === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Class_::classExists($db, $intezmeny_id, $class_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
@@ -770,8 +835,11 @@ class Controller
         if ($lesson_id === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Lesson::lessonExists($db, $intezmeny_id, $lesson_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
@@ -788,8 +856,11 @@ class Controller
         if ($group_id === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Group::groupExists($db, $intezmeny_id, $group_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
@@ -806,8 +877,11 @@ class Controller
         if ($room_id === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Room::roomExists($db, $intezmeny_id, $room_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
@@ -824,8 +898,11 @@ class Controller
         if ($teacher_id === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Teacher::teacherExists($db, $intezmeny_id, $teacher_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
@@ -842,8 +919,11 @@ class Controller
         if ($timetable_element_id === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = TimetableElement::timetableElementExists($db, $intezmeny_id, $timetable_element_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
@@ -860,8 +940,11 @@ class Controller
         if ($homework_id === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isTeacher($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Homework::homeworkExists($db, $intezmeny_id, $homework_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
@@ -884,8 +967,11 @@ class Controller
         if ($attachment_id === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isTeacher($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Attachment::attachmentExists($db, $intezmeny_id, $attachment_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
@@ -908,8 +994,11 @@ class Controller
         if ($name === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Class_::classExists($db, $intezmeny_id, $class_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
@@ -928,8 +1017,11 @@ class Controller
         if ($name === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Lesson::lessonExists($db, $intezmeny_id, $lesson_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
@@ -953,8 +1045,11 @@ class Controller
         if ($class_id === false) $class_id = null;
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         if ($class_id !== null) {
             $ret = Class_::classExists($db, $intezmeny_id, $class_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
@@ -983,8 +1078,11 @@ class Controller
         if ($space === null) return handleReturn(ControllerRet::bad_request);
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Room::roomExists($db, $intezmeny_id, $room_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
@@ -1008,8 +1106,11 @@ class Controller
         if ($teacher_uid === false) $teacher_uid = null;
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Teacher::teacherExists($db, $intezmeny_id, $teacher_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
@@ -1061,8 +1162,11 @@ class Controller
         if ($room_id === false) $room_id = null;
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = TimetableElement::timetableElementExists($db, $intezmeny_id, $element_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
@@ -1122,8 +1226,11 @@ class Controller
         if ($teacher_id === false) $teacher_id = null;
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
-        list($db, $intezmeny_id) = $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
 
+        $ret = User::isTeacher($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Homework::homeworkExists($db, $intezmeny_id, $homework_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);

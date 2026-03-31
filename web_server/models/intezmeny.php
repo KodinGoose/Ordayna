@@ -26,10 +26,9 @@ class Intezmeny
             if ($db->logError($db->connection->select_db('ordayna_main_db')) === null) return null;
             $ret = $db->handleQueryResult($db->connection->execute_query(
                 '
-                    SELECT intezmeny.id, intezmeny.name FROM users
-                    INNER JOIN intezmeny_users ON intezmeny_users.users_id = users.id
-                    INNER JOIN intezmeny ON intezmeny_users.intezmeny_id = intezmeny.id
-                    WHERE users.id = ?
+                    SELECT intezmeny.id, intezmeny.name FROM intezmeny_users
+                    LEFT JOIN intezmeny ON intezmeny.id = intezmeny_users.intezmeny_id
+                    WHERE intezmeny_users.users_id = ? AND intezmeny_users.invite_accepted = TRUE
                 ',
                 array($uid)
             ));

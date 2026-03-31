@@ -26,7 +26,6 @@ async function getAccessToken() {
   if (response.ok !== true) {
     location.replace('login.html');
   }
-  await response.text();
 }
 
 // Called every minute

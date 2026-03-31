@@ -55,6 +55,8 @@ match ($req_uri) {
     '/get_intezmenys' => route('GET', [$controller, 'getIntezmenys']),
     '/intezmeny/user/invite' => route('POST', [$controller, 'inviteToIntezmeny']),
     '/intezmeny/user/accept_invite' => route('POST', [$controller, 'acceptInviteToIntezmeny']),
+    '/intezmeny/user/get_invites' => route('GET', [$controller, 'getInvites']),
+    '/intezmeny/user/get_all' => route('POST', [$controller, 'getAllIntezmenyUsers']),
     '/intezmeny/create/class' => route('POST', [$controller, 'createClass']),
     '/intezmeny/create/lesson' => route('POST', [$controller, 'createLesson']),
     '/intezmeny/create/group' => route('POST', [$controller, 'createGroup']),

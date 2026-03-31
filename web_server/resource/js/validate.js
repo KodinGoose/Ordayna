@@ -16,6 +16,28 @@ export function validateString(id, err_id, max_len, min_len, name) {
   }
 }
 
+export function validateNumber(id, err_id, max, min, name) {
+  let val = document.getElementById(id).value;
+  if (val.length === 0) {
+    document.getElementById(err_id).innerHTML = "Úres " + name + " nem megengedett<br>";
+    return false;
+  } else if (val.match(/^\d+$/) === null) {
+    document.getElementById(err_id).innerHTML = "A " + name + " nem egész szám<br>";
+    return false;
+  }
+  val = parseInt(val);
+  if (val > max) {
+    document.getElementById(err_id).innerHTML = "A " + name + " maximum értéke " + max_len + "<br>";
+    return false;
+  } else if (val < min) {
+    document.getElementById(err_id).innerHTML = "A " + name + " minimum értéke " + min_len + "<br>";
+    return false;
+  } else {
+    document.getElementById(err_id).innerHTML = "";
+    return val;
+  }
+}
+
 export function validateEmail(id, err_id) {
   const val = document.getElementById(id).value;
   if (val.length === 0) {
