@@ -304,6 +304,22 @@ class User
         }
     }
 
+    public static function fireUser(DB $db, int $intezmeny_id, int $uid): bool|null
+    {
+        try {
+            if ($db->logError($db->connection->select_db('ordayna_main_db')) === null) return null;
+            return $db->handleQueryResult($db->connection->execute_query(
+                '
+                    DELETE FROM intezmeny_users
+                    WHERE intezmeny_users.intezmeny_id = ? AND intezmeny_users.users_id = ?
+                ',
+                array($intezmeny_id, $uid)
+            ));
+        } catch (Exception) {
+            return $db->logError(false);
+        }
+    }
+
     public static function acceptInvite(DB $db, int $intezmeny_id, int $uid): true|null
     {
         try {

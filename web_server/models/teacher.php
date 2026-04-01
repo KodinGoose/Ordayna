@@ -20,11 +20,11 @@ class Teacher
     public int $id;
     public string $name;
     public string $job;
-    public int $uid;
+    public ?int $uid;
     public array $lessons;
     public array $availabilitys;
 
-    public function __construct(int $id, string $name, string $job, int $uid, array $lessons, array $availabilitys)
+    public function __construct(int $id, string $name, string $job, ?int $uid, array $lessons, array $availabilitys)
     {
         $this->id = $id;
         $this->name = $name;
@@ -166,7 +166,7 @@ class Teacher
                     (int) $teachers[$i][0],
                     $teachers[$i][1],
                     $teachers[$i][2],
-                    (int) $teachers[$i][3],
+                    $teachers[$i][3] === null ? null : (int) $teachers[$i][3],
                     $teachers[$i][4],
                     $teachers[$i][5]
                 );

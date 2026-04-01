@@ -1,5 +1,7 @@
 <?php
 
+// TODO: Check if another class, group, lesson or room already exists with the same name as the current one's
+
 declare(strict_types=1);
 
 namespace Controller;
@@ -481,6 +483,28 @@ class Controller
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
         if (User::inviteUser($db, $intezmeny_id, $invited_user->id) === null) return handleReturn(ControllerRet::unexpected_error);
+
+        return handleReturn(ControllerRet::success_no_content);
+    }
+
+    public static function fireUser(): null
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $fire_uid = Controller::validateInteger(@$data->uid);
+        if ($fire_uid === null) return handleReturn(ControllerRet::bad_request);
+        $ret = Controller::validateIntezmenyData($data, false);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
+        list($db, $intezmeny_id, $uid) = $ret;
+
+        if ($uid === $fire_uid) return handleReturn(ControllerRet::unauthorised);
+        $ret = User::isAdmin($db, $intezmeny_id, $uid);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
+        $ret = User::partOfIntezmeny($db, $intezmeny_id, $fire_uid, false);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
+
+        if (User::fireUser($db, $intezmeny_id, $fire_uid) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
