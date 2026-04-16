@@ -7,6 +7,7 @@
 }
 
 body {
+    
     background-color: var(--off-white);
     padding: 0px;
     color: var(--light-purple);
@@ -25,6 +26,7 @@ select,input {
     background-color: var(--off-white);
     color: var(--light-purple);
     border: var(--dark-purple) solid 1px;
+    overflow-wrap: break-word;
 }
 
 hr {
@@ -60,7 +62,9 @@ h1 {
     color: var(--dark-purple);
 }
 
-
+.fix-width{
+    overflow-wrap: break-word;
+}
 
 #home_button {
     margin: 10px;
@@ -70,13 +74,29 @@ h1 {
 }
 
 #user_button {
-    margin: 10px;
-    margin-top: 5px;
-    position: fixed;
+    margin-right: 0;
+}
+
+.right-btn{
     top: 0px;
+    text-align: right;
     right: 0px;
 }
 
+#i-name{
+    font-size: 1.1em;
+}
+
+.header{
+    padding: 1.2em;
+    background-color: var(--dark-purple);
+    color:var(--off-white);
+    position: sticky;
+    top: 0px;
+    height:fit-content;
+    font-size: 1em;
+    margin-bottom: 0.3em;
+}
 #to_login_button,#to_signup_button,.change {
     background-color: var(--off-white);
     color: var(--blue);
@@ -88,13 +108,7 @@ h1 {
     padding: 20px;
 }
 
-#groups {
-    margin: 10px;
-    position: fixed;
-    top: 35px;
-    right: 10px;
-    width: 7%;
-}
+
 
 #pfp img {
     object-fit: cover;
@@ -120,6 +134,7 @@ h1 {
 }
 
 
+
 .listbox {width: 100%;}
 
 .box-md-long,.box-md-long-nb {height: 44.4vh;}
@@ -135,7 +150,7 @@ h1 {
 .box-tiny,.box-smallest,.box,.box-small,.box-long,.box-medium,.box-smaller,.box-md-long,.box-less-long,.intezmeny-box {border: 2px var(--dark-purple) solid;padding: 1em;border-radius: 0.4em;}
 
 .intezmeny-box {
-    margin: auto;
+    margin: 1.1em auto;
     width: fit-content;
 }
 .cont{
@@ -223,7 +238,6 @@ h1 {
 
 .input-div input[type="text"] {
     flex-grow: 1;
-    width: 0;
 }
 
 .prof-cont {
