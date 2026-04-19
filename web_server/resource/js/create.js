@@ -3,21 +3,6 @@ import { url, getCookie } from "./cookie.js";
 
 let intezmeny_id = getCookie("intezmeny_id");
 if (intezmeny_id === null) location.replace("profile.html");
-let intezmeny_name = getCookie("intezmeny_name");
-if (intezmeny_name === null) location.replace("profile.html");
-let user_role = getCookie("user_role");
-if (user_role === null) location.replace("profile.html");
-document.getElementById("i_name").innerHTML = `${intezmeny_name} ${user_role}`;
-
-function returnHome() {
-  if (user_role === "Diák") {
-    location.replace("home_stud.html");
-  } else if (user_role === "Tanár") {
-    location.replace("home_teach.html");
-  } else if (user_role === "Adminisztrátor") {
-    location.replace("home.html");
-  }
-}
 
 async function prepareCreate() {
   if (typeof document.getElementById("create_choice").options[document.getElementById("create_choice").selectedIndex] === 'undefined') {
@@ -53,104 +38,6 @@ async function prepareCreate() {
     <span id="actual_form"></span>
   `;
   document.getElementById("form").innerHTML = data;
-  // if (val === "class") {
-  //   document.getElementById("form").innerHTML = `
-  //     <input id="class_name">
-  //     <input id="class_count">
-  //     <button onclick="createClass()">Osztály létrehozása</button>
-  //     <div class="errors">
-  //       <span class="err" id="class_name_err"></span>
-  //       <span class="err" id="class_count_err"></span>
-  //     </div>
-  //   `;
-  // } else if (val === "group") {
-  //   const response = await fetch(url + "intezmeny/get/classes", {
-  //     method: "POST",
-  //     body: JSON.stringify({
-  //       intezmeny_id: intezmeny_id,
-  //     })
-  //   });
-  //   if (response.ok !== true) {
-  //     return;
-  //   }
-  //   let classes = await response.json();
-  //   let html = `
-  //     <input id="group_name">
-  //     <input id="group_count">
-  //     <select id="group_class">
-  //       <option value="-1">-</option>
-  //   `;
-  //   for (let i = 0; i < classes.length; i++) {
-  //     html += `<option value="${classes[i].id}">${classes[i].name}</option>`;
-  //   }
-  //   html += `
-  //     </select>
-  //     <button onclick="createGroup()">Csoport létrehozása</button>
-  //     <div class="errors">
-  //       <span class="err" id="group_name_err"></span>
-  //       <span class="err" id="group_count_err"></span>
-  //     </div>
-  //   `;
-  //   document.getElementById("form").innerHTML = html;
-  // } else if (val === "lesson") {
-  //   document.getElementById("form").innerHTML = `
-  //     <input id="lesson_name">
-  //     <button onclick="createLesson()">Tanóra létrehozása</button>
-  //     <div class="errors">
-  //       <span class="err" id="lesson_name_err"></span>
-  //     </div>
-  //   `;
-  // } else if (val === "room") {
-  //   document.getElementById("form").innerHTML = `
-  //     <input id="room_name">
-  //     <input id="room_type">
-  //     <input id="room_space">
-  //     <button onclick="createRoom()">Szoba létrehozása</button>
-  //     <div class="errors">
-  //       <span class="err" id="room_name_err"></span>
-  //       <span class="err" id="room_type_err"></span>
-  //       <span class="err" id="room_space_err"></span>
-  //     </div>
-  //   `;
-  // } else if (val === "teacher") {
-  //   const response = await fetch(url + "intezmeny/user/get_all", {
-  //     method: "POST",
-  //     body: JSON.stringify({
-  //       intezmeny_id: intezmeny_id,
-  //     })
-  //   });
-  //   if (response.ok !== true) {
-  //     return;
-  //   }
-  //   let users = await response.json();
-  //   let html = `
-  //     <input id="teacher_name">
-  //     <input id="teacher_job">
-  //     <select id="teacher_user" size="10">
-  //       <option value="-1">-</option>
-  //   `;
-  //   for (let i = 0; i < users.length; i++) {
-  //     if (users[i].role !== "student") continue;
-  //     html += `<option value="${users[i].id}">${users[i].display_name}</option>`;
-  //   }
-  //   html += `
-  //     </select>
-  //     <button onclick="createTeacher()">Tanár létrehozása</button>
-  //     <div class="errors">
-  //       <span class="err" id="teacher_name_err"></span>
-  //       <span class="err" id="teacher_job_err"></span>
-  //     </div>
-  //   `;
-  //   document.getElementById("form").innerHTML = html;
-  // } else if (val === "user") {
-  //   document.getElementById("form").innerHTML = `
-  //     <input id="user_email">
-  //     <button onclick="inviteUser()">Felhasználó meghívása</button>
-  //     <div class="errors">
-  //       <span class="err" id="user_email_err"></span>
-  //     </div>
-  //   `;
-  // }
 }
 
 async function prepareClass() {
@@ -160,8 +47,9 @@ async function prepareClass() {
   const val = document.getElementById("another_choice").options[document.getElementById("another_choice").selectedIndex].getAttribute("value");
   if (val === "create") {
     document.getElementById("actual_form").innerHTML = `
-      <input id="class_name">
-      <input id="class_count">
+      
+      <input id="class_name" placeholder="Osztály név">
+      <input id="class_count" placeholder="Osztály létszám">
       <button onclick="createClass()">Osztály létrehozása</button>
       <div class="errors">
         <span class="err" id="class_name_err"></span>
@@ -180,14 +68,14 @@ async function prepareClass() {
     }
     let classes = await response.json();
     let data = `
-      <select id="orig" size="10" onchange="modifyClassUpdate()">
+      <select id="orig" size="5" onchange="modifyClassUpdate()">
     `;
     for (let i = 0; i < classes.length; i++) {
       data += `<option value="${classes[i].id}">${classes[i].name}</option>`
     }
     data += `
       </select>
-      <input id="class_name">
+      <input id="class_name" placeholder="Módositott név">
       <button onclick="modifyClass()">Osztály módosítása</button>
       <div class="errors">
         <span class="err" id="class_name_err"></span>
@@ -206,7 +94,7 @@ async function prepareClass() {
     }
     let classes = await response.json();
     let data = `
-      <select id="orig" size="10">
+      <select id="orig" size="5">
     `;
     for (let i = 0; i < classes.length; i++) {
       data += `<option value="${classes[i].id}">${classes[i].name}</option>`
@@ -318,7 +206,7 @@ async function deleteClass() {
   await prepareClass();
 }
 
-async function prepareGroup() {
+async function prepare() {
   if (typeof document.getElementById("another_choice").options[document.getElementById("another_choice").selectedIndex] === 'undefined') {
     document.getElementById("another_choice").selectedIndex = 0;
   }
@@ -335,8 +223,8 @@ async function prepareGroup() {
     }
     let classes = await response.json();
     let html = `
-      <input id="group_name">
-      <input id="group_count">
+      <input id="group_name" placeholder="Group név">
+      <input id="group_count" placeholder="Group létszám">
       <select id="group_class">
         <option value="-1">-</option>
     `;
@@ -373,14 +261,14 @@ async function prepareGroup() {
       return;
     }
     let classes = await response_2.json();
-    let html = `<select id="orig" size="10" onchange="modifyGroupUpdate()">`;
+    let html = `<select id="orig" size="5" onchange="modifyGroupUpdate()">`;
     for (let i = 0; i < groups.length; i++) {
       html += `<option value="${groups[i].id}">${groups[i].name}</option>`;
     }
     html += `
       </select>
-      <input id="group_name">
-      <input id="group_count">
+      <input id="group_name" placeholder="Módosított név">
+      <input id="group_count" placeholder="Létszám">
       <select id="group_class">
         <option value="-1">-</option>
     `;
@@ -408,7 +296,7 @@ async function prepareGroup() {
     }
     let groups = await response.json();
     let data = `
-      <select id="orig" size="10">
+      <select id="orig" size="5">
     `;
     for (let i = 0; i < groups.length; i++) {
       data += `<option value="${groups[i].id}">${groups[i].name}</option>`
@@ -563,7 +451,7 @@ async function prepareLesson() {
   const val = document.getElementById("another_choice").options[document.getElementById("another_choice").selectedIndex].getAttribute("value");
   if (val === "create") {
     document.getElementById("actual_form").innerHTML = `
-      <input id="lesson_name">
+      <input id="lesson_name" placeholder="Óra név">
       <button onclick="createLesson()">Tanóra létrehozása</button>
       <div class="errors">
         <span class="err" id="lesson_name_err"></span>
@@ -581,14 +469,14 @@ async function prepareLesson() {
     }
     let lessons = await response.json();
     let data = `
-      <select id="orig" size="10" onchange="modifyLessonUpdate()">
+      <select id="orig" size="5" onchange="modifyLessonUpdate()">
     `;
     for (let i = 0; i < lessons.length; i++) {
       data += `<option value="${lessons[i].id}">${lessons[i].name}</option>`
     }
     data += `
       </select>
-      <input id="lesson_name">
+      <input id="lesson_name" placeholder="Módosított óra név">
       <button onclick="modifyLesson()">Tanóra módosítása</button>
       <div class="errors">
         <span class="err" id="lesson_name_err"></span>
@@ -607,7 +495,7 @@ async function prepareLesson() {
     }
     let lessons = await response.json();
     let data = `
-      <select id="orig" size="10">
+      <select id="orig" size="5">
     `;
     for (let i = 0; i < lessons.length; i++) {
       data += `<option value="${lessons[i].id}">${lessons[i].name}</option>`
@@ -723,9 +611,9 @@ async function prepareRoom() {
   const val = document.getElementById("another_choice").options[document.getElementById("another_choice").selectedIndex].getAttribute("value");
   if (val === "create") {
     document.getElementById("actual_form").innerHTML = `
-      <input id="room_name">
-      <input id="room_type">
-      <input id="room_space">
+      <input id="room_name" placeholder="Terem név">
+      <input id="room_type" placeholder="Terem type">
+      <input id="room_space" placeholder="Capacity">
       <button onclick="createRoom()">Szoba létrehozása</button>
       <div class="errors">
         <span class="err" id="room_name_err"></span>
@@ -745,16 +633,16 @@ async function prepareRoom() {
     }
     let rooms = await response.json();
     let data = `
-      <select id="orig" size="10" onchange="modifyRoomUpdate()">
+      <select id="orig" size="5" onchange="modifyRoomUpdate()">
     `;
     for (let i = 0; i < rooms.length; i++) {
       data += `<option value="${rooms[i].id}">${rooms[i].name}</option>`
     }
     data += `
       </select>
-      <input id="room_name">
-      <input id="room_type">
-      <input id="room_space">
+      <input id="room_name" placeholder="Módosított név">
+      <input id="room_type" placeholder=""Módosított type>
+      <input id="room_space" placeholder="Módosított capacity">
       <button onclick="modifyRoom()">Szoba módosítása</button>
       <div class="errors">
         <span class="err" id="room_name_err"></span>
@@ -775,7 +663,7 @@ async function prepareRoom() {
     }
     let rooms = await response.json();
     let data = `
-      <select id="orig" size="10">
+      <select id="orig" size="5">
     `;
     for (let i = 0; i < rooms.length; i++) {
       data += `<option value="${rooms[i].id}">${rooms[i].name}</option>`
@@ -911,9 +799,9 @@ async function prepareTeacher() {
     }
     let users = await response.json();
     let html = `
-      <input id="teacher_name">
-      <input id="teacher_job">
-      <select id="teacher_user" size="10">
+      <input id="teacher_name" placeholder="Tanár név">
+      <input id="teacher_job" placeholder="Szak">
+      <select id="teacher_user" >
         <option value="-1">-</option>
     `;
     for (let i = 0; i < users.length; i++) {
@@ -951,16 +839,16 @@ async function prepareTeacher() {
     }
     let teachers = await response.json();
     let data = `
-      <select id="orig" size="10" onchange="modifyTeacherUpdate()">
+      <select id="orig" size="5" onchange="modifyTeacherUpdate()">
     `;
     for (let i = 0; i < teachers.length; i++) {
       data += `<option value="${teachers[i].id}">${teachers[i].name}</option>`
     }
     data += `
       </select>
-      <input id="teacher_name">
-      <input id="teacher_job">
-      <select id="teacher_user" size="10">
+      <input id="teacher_name" placeholder="Név módosítása">
+      <input id="teacher_job" placeholder="Szak módosítása">
+      <select id="teacher_user" size="5">
         <option value="-1">-</option>
     `;
     for (let i = 0; i < users.length; i++) {
@@ -987,7 +875,7 @@ async function prepareTeacher() {
       return;
     }
     let teachers = await response.json();
-    let data = `<select id = "orig" size = "10">`;
+    let data = `<select id = "orig" size = "5">`;
     for (let i = 0; i < teachers.length; i++) {
       data += `<option value="${teachers[i].id}"> ${teachers[i].name}</option>`
     }
@@ -1153,7 +1041,7 @@ async function prepareUser() {
   const val = document.getElementById("another_choice").options[document.getElementById("another_choice").selectedIndex].getAttribute("value");
   if (val === "invite") {
     document.getElementById("actual_form").innerHTML = `
-      <input id="user_email">
+      <input id="user_email" placeholder="E-mail cím">
       <button onclick="inviteUser()">Felhasználó meghívása</button>
       <div class="errors">
         <span class="err" id="user_email_err"></span>
@@ -1176,7 +1064,7 @@ async function prepareUser() {
     }
     let profile = await response_2.json();
     let data = `
-      <select id="orig" size="10">
+      <select id="orig" size="5">
     `;
     for (let i = 0; i < users.length; i++) {
       if (users[i].id === profile.id) continue;
@@ -1269,4 +1157,3 @@ window.deleteTeacher = deleteTeacher;
 window.prepareUser = prepareUser;
 window.inviteUser = inviteUser;
 window.fireUser = fireUser;
-window.returnHome = returnHome;
