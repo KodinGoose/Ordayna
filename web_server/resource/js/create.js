@@ -238,8 +238,8 @@ async function prepareGroup() {
     }
     let classes = await response.json();
     let html = `
-      <input id="group_name" placeholder="Group név">
-      <input id="group_count" placeholder="Group létszám">
+      <input id="group_name" placeholder="Csoport név">
+      <input id="group_count" placeholder="Csoport létszám">
       <select id="group_class">
         <option value="-1">-</option>
     `;
@@ -627,8 +627,8 @@ async function prepareRoom() {
   if (val === "create") {
     document.getElementById("actual_form").innerHTML = `
       <input id="room_name" placeholder="Terem név">
-      <input id="room_type" placeholder="Terem type">
-      <input id="room_space" placeholder="Capacity">
+      <input id="room_type" placeholder="Terem típus">
+      <input id="room_space" placeholder="Férőhely">
       <button onclick="createRoom()">Szoba létrehozása</button>
       <div class="errors">
         <span class="err" id="room_name_err"></span>
@@ -656,8 +656,8 @@ async function prepareRoom() {
     data += `
       </select>
       <input id="room_name" placeholder="Módosított név">
-      <input id="room_type" placeholder="Módosított type">
-      <input id="room_space" placeholder="Módosított capacity">
+      <input id="room_type" placeholder="Módosított típus">
+      <input id="room_space" placeholder="Módosított férőhely">
       <button onclick="modifyRoom()">Szoba módosítása</button>
       <div class="errors">
         <span class="err" id="room_name_err"></span>
