@@ -74,12 +74,12 @@ CREATE OR REPLACE TABLE homework (
     id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     description TEXT NOT NULL,
     published   DATETIME NOT NULL DEFAULT NOW(),
-    due         DATETIME,
+    due         DATETIME NOT NULL,
     group_id    INT UNSIGNED NOT NULL,
-    lesson_id   INT UNSIGNED,
-    teacher_id  INT UNSIGNED,
-    CONSTRAINT fk_homework_lesson FOREIGN KEY ( lesson_id ) REFERENCES lesson( id ) ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT fk_homework_teacher FOREIGN KEY ( teacher_id ) REFERENCES teacher( id ) ON DELETE SET NULL ON UPDATE CASCADE
+    lesson_id   INT UNSIGNED NOT NULL,
+    teacher_id  INT UNSIGNED NOT NULL,
+    CONSTRAINT fk_homework_lesson FOREIGN KEY ( lesson_id ) REFERENCES lesson( id ) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_homework_teacher FOREIGN KEY ( teacher_id ) REFERENCES teacher( id ) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE OR REPLACE TABLE attachments (

@@ -257,7 +257,7 @@ class Controller
         $ret = Intezmeny::deleteOrphanedIntezmenys($db);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         for ($i = 0; $i < count($ret); $i++) {
-            if (rmdirRecursive("user_data/intezmeny_" + $ret[$i]) === false) return handleReturn(ControllerRet::unexpected_error);
+            if (rmdirRecursive("user_data/intezmeny_".$ret[$i]) === false) return handleReturn(ControllerRet::unexpected_error);
         }
 
         if (User::revokeAllTokens($db, $token->claims()->get("uid")) === null) return handleReturn(ControllerRet::unexpected_error);
@@ -796,17 +796,14 @@ class Controller
         $data = json_decode(file_get_contents("php://input"));
         $description = Controller::validateString(@$data->description);
         if ($description === null) return handleReturn(ControllerRet::bad_request);
-        $due = Controller::validateTime(@$data->due, date_allowed: true, time_allowed: true, null_allowed: true);
+        $due = Controller::validateTime(@$data->due, date_allowed: true, time_allowed: true);
         if ($due === null) return handleReturn(ControllerRet::bad_request);
-        if ($due === false) $due = null;
         $group_id = Controller::validateInteger(@$data->group_id);
         if ($group_id === null) return handleReturn(ControllerRet::bad_request);
-        $lesson_id = Controller::validateInteger(@$data->lesson_id, null_allowed: true);
+        $lesson_id = Controller::validateInteger(@$data->lesson_id);
         if ($lesson_id === null) return handleReturn(ControllerRet::bad_request);
-        if ($lesson_id === false) $lesson_id = null;
-        $teacher_id = Controller::validateInteger(@$data->teacher_id, null_allowed: true);
+        $teacher_id = Controller::validateInteger(@$data->teacher_id);
         if ($teacher_id === null) return handleReturn(ControllerRet::bad_request);
-        if ($teacher_id === false) $teacher_id = null;
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id, $uid) = $ret;
@@ -817,18 +814,14 @@ class Controller
         $ret = Group::groupExists($db, $intezmeny_id, $group_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
-        if ($lesson_id !== null) {
-            $ret = Lesson::lessonExists($db, $intezmeny_id, $lesson_id);
-            if ($ret === false) return handleReturn(ControllerRet::bad_request);
-            if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
-        }
-        if ($teacher_id !== null) {
-            $ret = Teacher::teacherExists($db, $intezmeny_id, $teacher_id);
-            if ($ret === false) return handleReturn(ControllerRet::bad_request);
-            if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
-        }
+        $ret = Lesson::lessonExists($db, $intezmeny_id, $lesson_id);
+        if ($ret === false) return handleReturn(ControllerRet::bad_request);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
+        $ret = Teacher::teacherExists($db, $intezmeny_id, $teacher_id);
+        if ($ret === false) return handleReturn(ControllerRet::bad_request);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if (Homework::createHomework($db, $intezmeny_id, $description, $due !== null ? $due->format("Y-m-d h:i:s") : null, $group_id, $lesson_id, $teacher_id) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Homework::createHomework($db, $intezmeny_id, $description, $due->format("Y-m-d h:i:s"), $group_id, $lesson_id, $teacher_id) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_created);
     }
@@ -1274,17 +1267,14 @@ class Controller
         if ($homework_id === null) return handleReturn(ControllerRet::bad_request);
         $description = Controller::validateString(@$data->description);
         if ($description === null) return handleReturn(ControllerRet::bad_request);
-        $due = Controller::validateTime(@$data->due, date_allowed: true, time_allowed: true, null_allowed: true);
+        $due = Controller::validateTime(@$data->due, date_allowed: true, time_allowed: true);
         if ($due === null) return handleReturn(ControllerRet::bad_request);
-        if ($due === false) $due = null;
         $group_id = Controller::validateInteger(@$data->group_id);
         if ($group_id === null) return handleReturn(ControllerRet::bad_request);
-        $lesson_id = Controller::validateInteger(@$data->lesson_id, null_allowed: true);
+        $lesson_id = Controller::validateInteger(@$data->lesson_id);
         if ($lesson_id === null) return handleReturn(ControllerRet::bad_request);
-        if ($lesson_id === false) $lesson_id = null;
-        $teacher_id = Controller::validateInteger(@$data->teacher_id, null_allowed: true);
+        $teacher_id = Controller::validateInteger(@$data->teacher_id);
         if ($teacher_id === null) return handleReturn(ControllerRet::bad_request);
-        if ($teacher_id === false) $teacher_id = null;
         $ret = Controller::validateIntezmenyData($data, true);
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id, $uid) = $ret;
@@ -1298,23 +1288,19 @@ class Controller
         $ret = Group::groupExists($db, $intezmeny_id, $group_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
-        if ($lesson_id !== null) {
-            $ret = Lesson::lessonExists($db, $intezmeny_id, $lesson_id);
-            if ($ret === false) return handleReturn(ControllerRet::bad_request);
-            if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
-        }
-        if ($teacher_id !== null) {
-            $ret = Teacher::teacherExists($db, $intezmeny_id, $teacher_id);
-            if ($ret === false) return handleReturn(ControllerRet::bad_request);
-            if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
-        }
+        $ret = Lesson::lessonExists($db, $intezmeny_id, $lesson_id);
+        if ($ret === false) return handleReturn(ControllerRet::bad_request);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
+        $ret = Teacher::teacherExists($db, $intezmeny_id, $teacher_id);
+        if ($ret === false) return handleReturn(ControllerRet::bad_request);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
         if (Homework::updateHomework(
             $db,
             $intezmeny_id,
             $homework_id,
             $description,
-            $due !== null ? $due->format("Y-m-d h:i:s") : null,
+            $due->format("Y-m-d h:i:s"),
             $group_id,
             $lesson_id,
             $teacher_id

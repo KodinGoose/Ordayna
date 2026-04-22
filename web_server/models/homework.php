@@ -20,13 +20,13 @@ class Homework
     public int $id;
     public string $description;
     public string $published;
-    public ?string $due;
+    public string $due;
     public Group $group;
-    public ?Lesson $lesson;
-    public ?Teacher $teacher;
+    public Lesson $lesson;
+    public Teacher $teacher;
     public array $attachments;
 
-    public function __construct(int $id, string $description, string $published, ?string $due, Group $group, ?Lesson $lesson, ?Teacher $teacher, array $attachments)
+    public function __construct(int $id, string $description, string $published, string $due, Group $group, Lesson $lesson, Teacher $teacher, array $attachments)
     {
         $this->id = $id;
         $this->description = $description;
@@ -51,7 +51,7 @@ class Homework
         }
     }
 
-    public static function createHomework(DB $db, int $intezmeny_id, string $description, string|null $due, int $group_id, int|null $lesson_id, int|null $teacher_id): true|null
+    public static function createHomework(DB $db, int $intezmeny_id, string $description, string $due, int $group_id, int $lesson_id, int $teacher_id): true|null
     {
         try {
             if ($db->logError($db->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
@@ -77,7 +77,7 @@ class Homework
         }
     }
 
-    public static function updateHomework(DB $db, int $intezmeny_id, int $homework_id, string $description, string|null $due, int $group_id, int|null $lesson_id, int|null $teacher_id): true|null
+    public static function updateHomework(DB $db, int $intezmeny_id, int $homework_id, string $description, string $due, int $group_id, int $lesson_id, int $teacher_id): true|null
     {
         try {
             if ($db->logError($db->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
@@ -123,12 +123,12 @@ class Homework
                     $homeworks[$i][1],
                     $homeworks[$i][2],
                     $homeworks[$i][3],
-                    $homeworks[$i][4] === null ? null : new Group((int) $homeworks[$i][4], $homeworks[$i][5], (int) $homeworks[$i][6], new Class_(
+                    new Group((int) $homeworks[$i][4], $homeworks[$i][5], (int) $homeworks[$i][6], new Class_(
                         (int) $homeworks[$i][7],
                         $homeworks[$i][8]
                     )),
-                    $homeworks[$i][9] === null ? null : new Lesson((int) $homeworks[$i][9], $homeworks[$i][10]),
-                    $homeworks[$i][11] === null ? null : new Teacher((int) $homeworks[$i][11], $homeworks[$i][12]),
+                    new Lesson((int) $homeworks[$i][9], $homeworks[$i][10]),
+                    new Teacher((int) $homeworks[$i][11], $homeworks[$i][12]),
                     $homeworks[$i][13]
                 );
             }

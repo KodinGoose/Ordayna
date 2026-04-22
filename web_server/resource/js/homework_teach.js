@@ -180,11 +180,15 @@ async function newHomework() {
   const lesson_id =
     typeof document.getElementById("new_lesson").options[document.getElementById("new_lesson").selectedIndex] === 'undefined' ?
       (() => { document.getElementById("empty_err").innerHTML += "Válasszon ki egy tantárgyat<br>"; return false; })() :
-      document.getElementById("new_lesson").options[document.getElementById("new_lesson").selectedIndex].getAttribute("value");
+      (document.getElementById("new_lesson").options[document.getElementById("new_lesson").selectedIndex].getAttribute("value") === "-1" ?
+        (() => { document.getElementById("empty_err").innerHTML += "Válasszon ki egy tantárgyat<br>"; return false; })() :
+        document.getElementById("new_lesson").options[document.getElementById("new_lesson").selectedIndex].getAttribute("value"));
   const teacher_id =
     typeof document.getElementById("new_teacher").options[document.getElementById("new_teacher").selectedIndex] === 'undefined' ?
       (() => { document.getElementById("empty_err").innerHTML += "Válasszon ki egy tanarat<br>"; return false; })() :
-      document.getElementById("new_teacher").options[document.getElementById("new_teacher").selectedIndex].getAttribute("value");
+      (document.getElementById("new_teacher").options[document.getElementById("new_teacher").selectedIndex].getAttribute("value") === "-1" ?
+        (() => { document.getElementById("empty_err").innerHTML += "Válasszon ki egy tanarat<br>"; return false; })() :
+        document.getElementById("new_teacher").options[document.getElementById("new_teacher").selectedIndex].getAttribute("value"));
   if (
     homework_id === false || description === false || due === false ||
     group_id === false || lesson_id === false || teacher_id === false
