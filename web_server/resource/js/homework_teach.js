@@ -2,11 +2,11 @@ import { url, getCookie } from "./cookie.js";
 import { validateDateTime, validateString } from "./validate.js";
 
 const intezmeny_id = getCookie("intezmeny_id");
-if (intezmeny_id === null) location.replace("profile.html");
+if (intezmeny_id === null) location.href = "profile.html";
 let intezmeny_name = getCookie("intezmeny_name");
-if (intezmeny_name === null) location.replace("profile.html");
+if (intezmeny_name === null) location.href = "profile.html";
 let user_role = getCookie("user_role");
-if (user_role === null) location.replace("profile.html");
+if (user_role === null) location.href = "profile.html";
 document.getElementById("i-name").innerHTML = `${intezmeny_name} ${user_role}`;
 let groups = [];
 let lessons = [];
@@ -15,11 +15,11 @@ let homeworks = [];
 
 function returnHome() {
   if (user_role === "Diák") {
-    location.replace("home_stud.html");
+    location.href = "home_stud.html";
   } else if (user_role === "Tanár") {
-    location.replace("home_teach.html");
+    location.href = "home_teach.html";
   } else if (user_role === "Adminisztrátor") {
-    location.replace("home.html");
+    location.href = "home.html";
   }
 }
 
@@ -108,12 +108,12 @@ function updateHomeworks() {
     if (homeworks[i].group.id !== group_id) continue;
     homeworks_html += `
       <div class="homework" onclick="refillEx(${i + 1})" style="cursor:pointer">
-        <div>Csoport: ${homeworks[i].group.name.length < 25 ? homeworks[i].group.name : (homeworks[i].group.name.slice(0, 25) + "...")}</div>
-        <div>Tárgy: ${homeworks[i].lesson.name.length < 25 ? homeworks[i].lesson.name : (homeworks[i].lesson.name.slice(0, 25) + "...")}</div>
+        <div>Csoport: ${homeworks[i].group.name.length <= 25 ? homeworks[i].group.name : (homeworks[i].group.name.slice(0, 25) + "...")}</div>
+        <div>Tárgy: ${homeworks[i].lesson.name.length <= 25 ? homeworks[i].lesson.name : (homeworks[i].lesson.name.slice(0, 25) + "...")}</div>
         <div>Kiadva: ${homeworks[i].published}</div>
-        <div>Kiadta: ${homeworks[i].teacher.name.length < 25 ? homeworks[i].teacher.name : (homeworks[i].teacher.name.slice(0, 25) + "...")}</div>
+        <div>Kiadta: ${homeworks[i].teacher.name.length <= 25 ? homeworks[i].teacher.name : (homeworks[i].teacher.name.slice(0, 25) + "...")}</div>
         <div>Határidő: ${homeworks[i].due}</div>
-        <div>${homeworks[i].description.length < 25 ? homeworks[i].description : (homeworks[i].description.slice(0, 25) + "...")}</div>
+        <div>${homeworks[i].description.length <= 25 ? homeworks[i].description : (homeworks[i].description.slice(0, 25) + "...")}</div>
       </div>
     `;
   }
@@ -232,6 +232,30 @@ async function newHomework() {
   await loadHomeworks();
 }
 
+async function deleteHomework() {
+  document.getElementById("err").innerHTML = `<span id="empty_err"></span>`;
+  const del_id =
+    typeof document.getElementById("choice").options[document.getElementById("choice").selectedIndex] === 'undefined' ?
+      (() => { document.getElementById("empty_err").innerHTML += "Válasszon ki egy elemet<br>"; return false; })() :
+      (document.getElementById("choice").options[document.getElementById("choice").selectedIndex].getAttribute("value") === "-1" ?
+        (() => { document.getElementById("empty_err").innerHTML += "Válasszon ki egy elemet<br>"; return false; })() :
+        document.getElementById("choice").options[document.getElementById("choice").selectedIndex].getAttribute("value"));
+  if (del_id === false) return;
+
+  const response = await fetch(url + "intezmeny/delete/homework", {
+    method: "DELETE",
+    body: JSON.stringify({
+      intezmeny_id: intezmeny_id,
+      homework_id: del_id,
+    })
+  });
+  if (response.ok !== true) {
+    document.getElementById("err").innerHTML = await response.text();
+    return;
+  }
+  await loadHomeworks();
+}
+
 await loadGroups();
 await loadHomeworks();
 await loadLessons();
@@ -242,3 +266,4 @@ window.updateHomeworks = updateHomeworks;
 window.refill = refill;
 window.refillEx = refillEx;
 window.newHomework = newHomework;
+window.deleteHomework = deleteHomework;

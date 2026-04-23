@@ -257,7 +257,7 @@ class Controller
         $ret = Intezmeny::deleteOrphanedIntezmenys($db);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         for ($i = 0; $i < count($ret); $i++) {
-            if (rmdirRecursive("user_data/intezmeny_".$ret[$i]) === false) return handleReturn(ControllerRet::unexpected_error);
+            if (rmdirRecursive("user_data/intezmeny_" . $ret[$i]) === false) return handleReturn(ControllerRet::unexpected_error);
         }
 
         if (User::revokeAllTokens($db, $token->claims()->get("uid")) === null) return handleReturn(ControllerRet::unexpected_error);

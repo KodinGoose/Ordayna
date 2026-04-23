@@ -1,11 +1,11 @@
 import { url, getCookie } from "./cookie.js";
 
 const intezmeny_id = getCookie("intezmeny_id");
-if (intezmeny_id === null) location.replace("profile.html");
+if (intezmeny_id === null) location.href = "profile.html";
 let intezmeny_name = getCookie("intezmeny_name");
-if (intezmeny_name === null) location.replace("profile.html");
+if (intezmeny_name === null) location.href = "profile.html";
 let user_role = getCookie("user_role");
-if (user_role === null) location.replace("profile.html");
+if (user_role === null) location.href = "profile.html";
 document.getElementById("i-name").innerHTML = `${intezmeny_name} ${user_role}`;
 let homeworks = [];
 let groups = [];
@@ -13,11 +13,11 @@ let lessons = [];
 
 function returnHome() {
   if (user_role === "Diák") {
-    location.replace("home_stud.html");
+    location.href = "home_stud.html";
   } else if (user_role === "Tanár") {
-    location.replace("home_teach.html");
+    location.href = "home_teach.html";
   } else if (user_role === "Adminisztrátor") {
-    location.replace("home.html");
+    location.href = "home.html";
   }
 }
 
@@ -35,7 +35,7 @@ async function loadGroups() {
 
   let html = "";
   for (let i = 0; i < groups.length; i++) {
-    html += `<option value="${groups[i].id}">${groups[i].name}</option>`;
+    html += `<option value="${groups[i].id}">${groups[i].name.length <= 25 ? groups[i].name : (groups[i].name.slice(0, 25) + "...")}</option>`;
   }
   document.getElementById("groups").innerHTML = html;
 }
@@ -54,7 +54,7 @@ async function loadLessons() {
 
   let html = "";
   for (let i = 0; i < lessons.length; i++) {
-    html += `<option value="${lessons[i].id}">${lessons[i].name}</option>`;
+    html += `<option value="${lessons[i].id}">${lessons[i].name.length <= 25 ? lessons[i].name : (lessons[i].name.slice(0, 25) + "...")}</option>`;
   }
   document.getElementById("tantargy").innerHTML = html;
 }
@@ -89,12 +89,12 @@ function updateHomeworks() {
     if (homeworks[i].group.id !== group_id || homeworks[i].lesson.id !== lesson_id) continue;
     homeworks_html += `
       <div class="homework" onclick="expandDescription(${i})" style="cursor:pointer">
-        <div>Csoport: ${homeworks[i].group.name.length < 25 ? homeworks[i].group.name : (homeworks[i].group.name.slice(0, 25) + "...")}</div>
-        <div>Tárgy: ${homeworks[i].lesson.name.length < 25 ? homeworks[i].lesson.name : (homeworks[i].lesson.name.slice(0, 25) + "...")}</div>
+        <div>Csoport: ${homeworks[i].group.name.length <= 25 ? homeworks[i].group.name : (homeworks[i].group.name.slice(0, 25) + "...")}</div>
+        <div>Tárgy: ${homeworks[i].lesson.name.length <= 25 ? homeworks[i].lesson.name : (homeworks[i].lesson.name.slice(0, 25) + "...")}</div>
         <div>Kiadva: ${homeworks[i].published}</div>
-        <div>Kiadta: ${homeworks[i].teacher.name.length < 25 ? homeworks[i].teacher.name : (homeworks[i].teacher.name.slice(0, 25) + "...")}</div>
+        <div>Kiadta: ${homeworks[i].teacher.name.length <= 25 ? homeworks[i].teacher.name : (homeworks[i].teacher.name.slice(0, 25) + "...")}</div>
         <div>Határidő: ${homeworks[i].due}</div>
-        <div>${homeworks[i].description.length < 25 ? homeworks[i].description : (homeworks[i].description.slice(0, 25) + "...")}</div>
+        <div>${homeworks[i].description.length <= 25 ? homeworks[i].description : (homeworks[i].description.slice(0, 25) + "...")}</div>
       </div>
     `;
   }

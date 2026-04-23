@@ -9,8 +9,8 @@ async function loadUserData() {
     }
     const result = await response.json();
 
-    document.getElementById("og_display").innerHTML = result.display_name;
-    document.getElementById("mail_add").innerHTML = result.email;
+    document.getElementById("og_display").innerHTML = result.display_name.length < 75 ? result.display_name : (result.display_name.slice(0, 75) + "...");
+    document.getElementById("mail_add").innerHTML = result.email.length < 75 ? result.email : (result.email.slice(0, 75) + "...");
     document.getElementById("og_tel").innerHTML = result.phone_number !== null ? result.phone_number : "Nincs telefonszám megadva";
     document.getElementById("pfp").innerHTML = '<img src="img\\img3.jpg" alt="pfp">';
   }
@@ -22,7 +22,7 @@ async function loadUserData() {
     const result = await response.json();
     document.getElementById("intezmeny_list").innerHTML = "";
     for (let i = 0; i < result.length; i++) {
-      document.getElementById("intezmeny_list").innerHTML += `${result[i].id}: <a class='kerek' onclick="loadIntezmeny(\`${result[i].id}\`, \`${result[i].name}\`)">${result[i].name}</a><br>`;
+      document.getElementById("intezmeny_list").innerHTML += `${result[i].id}: <a class='kerek' onclick="loadIntezmeny(\`${result[i].id}\`, \`${result[i].name}\`)">${result[i].name.length <= 50 ? result[i].name : (result[i].name.slice(0, 50) + "...")}</a><br>`;
     }
   }
   {
@@ -33,7 +33,7 @@ async function loadUserData() {
     const result = await response.json();
     document.getElementById("invites").innerHTML = "";
     for (let i = 0; i < result.length; i++) {
-      document.getElementById("invites").innerHTML += `<option value="${result[i].intezmeny_id}">${result[i].intezmeny_id}: ${result[i].intezmeny_name}</option>`;
+      document.getElementById("invites").innerHTML += `<option value="${result[i].intezmeny_id}">${result[i].intezmeny_id}: ${result[i].intezmeny_name.length <= 50 ? result[i].intezmeny_name : (result[i].intezmeny_name.slice(0, 50) + "...")}</option>`;
     }
   }
 }
@@ -53,13 +53,13 @@ async function loadIntezmeny(id, name) {
   document.cookie = "intezmeny_name=" + name;
   if (result === "student") {
     document.cookie = "user_role=Diák";
-    location.replace("home_stud.html");
+    location.href = "home_stud.html";
   } else if (result === "teacher") {
     document.cookie = "user_role=Tanár";
-    location.replace("home_teach.html");
+    location.href = "home_teach.html";
   } else if (result === "admin") {
     document.cookie = "user_role=Adminisztrátor";
-    location.replace("home.html");
+    location.href = "home.html";
   }
 }
 
@@ -87,7 +87,7 @@ function changePfp(a) {
 async function signout() {
   const response = await fetch(url + "user/logout", { method: "GET" });
   if (response.ok === true) {
-    location.replace('login.html');
+    location.href = 'login.html';
   }
 }
 
@@ -166,7 +166,7 @@ async function passChange() {
   if (response.ok === false) {
     document.getElementById("inp_cur_pass_change_err").innerHTML = "Sikertelen jelszó változtatás<br>";
   } else {
-    location.replace('login.html');
+    location.href = 'login.html';
   }
 }
 
