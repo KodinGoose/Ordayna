@@ -2,11 +2,11 @@ import { validateDate, validateTime } from "./validate.js";
 import { url, getCookie } from "./cookie.js";
 
 let intezmeny_id = getCookie("intezmeny_id");
-if (intezmeny_id === null) location.replace("profile.html");
+if (intezmeny_id === null) location.href = "profile.html";
 let intezmeny_name = getCookie("intezmeny_name");
-if (intezmeny_name === null) location.replace("profile.html");
+if (intezmeny_name === null) location.href = "profile.html";
 let user_role = getCookie("user_role");
-if (user_role === null) location.replace("profile.html");
+if (user_role === null) location.href = "profile.html";
 document.getElementById("i-name").innerHTML = `${intezmeny_name} ${user_role}`;
 let teachers = null;
 let lessons = null;
@@ -15,11 +15,11 @@ let groups = null;
 
 function returnHome() {
   if (user_role === "Diák") {
-    location.replace("home_stud.html");
+    location.href = "home_stud.html";
   } else if (user_role === "Tanár") {
-    location.replace("home_teach.html");
+    location.href = "home_teach.html";
   } else if (user_role === "Adminisztrátor") {
-    location.replace("home.html");
+    location.href = "home.html";
   }
 }
 
@@ -37,7 +37,7 @@ async function loadTeachers() {
 
   document.getElementById("tanar_option").innerHTML = "";
   for (let i = 0; i < teachers.length; i++) {
-    document.getElementById("tanar_option").innerHTML += `<option value="${teachers[i].id}">${teachers[i].name}</option>`;
+    document.getElementById("tanar_option").innerHTML += `<option value="${teachers[i].id}">${teachers[i].name.length <= 25 ? teachers[i].name : (teachers[i].name.slice(0, 25) + "...")}</option>`;
   }
 }
 
@@ -55,7 +55,7 @@ async function loadLessons() {
 
   document.getElementById("tantargy_option").innerHTML = "";
   for (let i = 0; i < lessons.length; i++) {
-    document.getElementById("tantargy_option").innerHTML += `<option value="${lessons[i].id}">${lessons[i].name}</option>`;
+    document.getElementById("tantargy_option").innerHTML += `<option value="${lessons[i].id}">${lessons[i].name.length <= 25 ? lessons[i].name : (lessons[i].name.slice(0, 25) + "...")}</option>`;
   }
 }
 
@@ -73,7 +73,7 @@ async function loadRooms() {
 
   document.getElementById("terem_option").innerHTML = "";
   for (let i = 0; i < rooms.length; i++) {
-    document.getElementById("terem_option").innerHTML += `<option value="${rooms[i].id}">${rooms[i].name}</option>`;
+    document.getElementById("terem_option").innerHTML += `<option value="${rooms[i].id}">${rooms[i].name.length <= 25 ? rooms[i].name : (rooms[i].name.slice(0, 25) + "...")}</option>`;
   }
 }
 
@@ -91,7 +91,7 @@ async function loadGroups() {
 
   document.getElementById("groups").innerHTML = "";
   for (let i = 0; i < groups.length; i++) {
-    document.getElementById("groups").innerHTML += `<option value="${groups[i].id}">${groups[i].name}</option>`;
+    document.getElementById("groups").innerHTML += `<option value="${groups[i].id}">${groups[i].name.length <= 25 ? groups[i].name : (groups[i].name.slice(0, 25) + "...")}</option>`;
   }
 }
 
@@ -124,19 +124,19 @@ function updateTimetable() {
       table += "<td>"
       for (let k = 0; k < lessons.length; k++) {
         if (lessons[k].id === timetable[j].lesson_id) {
-          table += `<div>${lessons[k].name}</div>`;
+          table += `<div>${lessons[k].name.length <= 20 ? lessons[k].name : (lessons[k].name.slice(0, 20) + "...")}</div>`;
           break;
         }
       }
       for (let k = 0; k < teachers.length; k++) {
         if (teachers[k].id === timetable[j].teacher_id) {
-          table += `<div>${teachers[k].name}</div>`;
+          table += `<div>${teachers[k].name.length <= 20 ? teachers[k].name : (teachers[k].name.slice(0, 20) + "...")}</div>`;
           break;
         }
       }
       for (let k = 0; k < rooms.length; k++) {
         if (rooms[k].id === timetable[j].room_id) {
-          table += `<div>${rooms[k].name}</div>`;
+          table += `<div>${rooms[k].name.length <= 20 ? rooms[k].name : (rooms[k].name.slice(0, 20) + "...")}</div>`;
           break;
         }
       }

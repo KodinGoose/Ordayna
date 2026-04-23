@@ -1,11 +1,11 @@
 import { getCookie, url } from "./cookie.js";
 
 let intezmeny_id = getCookie("intezmeny_id");
-if (intezmeny_id === null) location.replace("profile.html");
+if (intezmeny_id === null) location.href = "profile.html";
 let intezmeny_name = getCookie("intezmeny_name");
-if (intezmeny_name === null) location.replace("profile.html");
+if (intezmeny_name === null) location.href = "profile.html";
 let user_role = getCookie("user_role");
-if (user_role === null) location.replace("profile.html");
+if (user_role === null) location.href = "profile.html";
 document.getElementById("i-name").innerHTML = `${intezmeny_name} ${user_role}`;
 let timetable = [];
 let teachers = [];
@@ -15,11 +15,11 @@ let groups = [];
 
 function returnHome() {
   if (user_role === "Diák") {
-    location.replace("home_stud.html");
+    location.href = "home_stud.html";
   } else if (user_role === "Tanár") {
-    location.replace("home_teach.html");
+    location.href = "home_teach.html";
   } else if (user_role === "Adminisztrátor") {
-    location.replace("home.html");
+    location.href = "home.html";
   }
 }
 
@@ -76,7 +76,7 @@ async function loadGroups() {
 
   let html = "";
   for (let i = 0; i < groups.length; i++) {
-    html += `<div>${groups[i].name}<input type="checkbox" onchange="updateTimetable()" id=${"group_" + groups[i].id}></div>`
+    html += `<div>${groups[i].name.length <= 15 ? groups[i].name : (groups[i].name.slice(0, 15) + "...")}<input type="checkbox" onchange="updateTimetable()" id=${"group_" + groups[i].id}></div>`
   }
   document.getElementById("classes_").innerHTML = html;
 }
@@ -118,19 +118,19 @@ function updateTimetable() {
       html += `<div class="ora-card">`
       for (let k = 0; k < lessons.length; k++) {
         if (lessons[k].id === timetable[i].lesson_id) {
-          html += `<div>${lessons[k].name}</div>`;
+          html += `<div>${lessons[k].name.length <= 15 ? lessons[k].name : (lessons[k].name.slice(0, 15) + "...")}</div>`;
           break;
         }
       }
       for (let k = 0; k < teachers.length; k++) {
         if (teachers[k].id === timetable[i].teacher_id) {
-          html += `<div>${teachers[k].name}</div>`;
+          html += `<div>${teachers[k].name.length <= 15 ? teachers[k].name : (teachers[k].name.slice(0, 15) + "...")}</div>`;
           break;
         }
       }
       for (let k = 0; k < rooms.length; k++) {
         if (rooms[k].id === timetable[i].room_id) {
-          html += `<div>${rooms[k].name}</div>`;
+          html += `<div>${rooms[k].name.length <= 15 ? rooms[k].name : (rooms[k].name.slice(0, 15) + "...")}</div>`;
           break;
         }
       }

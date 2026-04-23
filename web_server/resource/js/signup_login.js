@@ -5,7 +5,7 @@ const url = window.location.protocol + "//" + window.location.host + "/";
 async function refresh() {
   const response = await fetch(url + "token/refresh_refresh_token", { method: "GET" });
   if (response.ok === true) {
-    location.replace('profile.html');
+    location.href = 'profile.html';
   }
 }
 
@@ -48,7 +48,7 @@ async function signup() {
     }
   } else {
     document.getElementById("signup_display_name_err").innerHTML = "";
-    location.replace('login.html');
+    location.href = 'login.html';
   }
 }
 
@@ -72,7 +72,7 @@ async function login() {
     document.getElementById("login_email_err").innerHTML = "Unexpected error:" + result + "<br>";
   } else {
     document.getElementById("login_email_err").innerHTML = "";
-    location.replace('profile.html');
+    location.href = 'profile.html';
   }
 }
 
