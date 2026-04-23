@@ -103,7 +103,7 @@ function updateHomeworks() {
 }
 
 function expandDescription(homework_array_id) {
-  document.getElementById("feladatok_leiras").innerText = homeworks[homework_array_id].description;
+  document.getElementById("feladatok_leiras").value = homeworks[homework_array_id].description;
 }
 
 await loadLessons();
