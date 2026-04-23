@@ -15,7 +15,7 @@
   <div class="header row">
 
     <div id="i-name" class="col"></div>
-    <div class="right-btn col"><button onclick="location.replace('profile.html')" id="user_button">Felhasználó</button>
+    <div class="right-btn col"><button onclick="location.href = 'profile.html'" id="user_button">Felhasználó</button>
     </div>
 
   </div>
@@ -37,35 +37,31 @@
             <hr>
 
             <div class="input-div mt-3">
-            <div class="table-responsive">
-              <table class="w-100">
-                <tr>
-                  <th>Feladat id</th>
-                  <th>Tantárgy</th>
-                  <th>Tanár</th>
-                  <th>Határidő</th>
-                  <th></th>
-                  <th></th>
-                </tr>
-                <tr>
-                  <td><select id="choice" onchange="refill()" class="form-select"></select></td>
-                  <td>
-                    <select id="new_lesson" class="form-select"></select>
-                  </td>
-                  <td>
-                    <select id="new_teacher" class="form-select"></select>
-                  </td>
-                  <td><input type="text" id="new_due" placeholder="YYYY-MM-DD hh:mm:ss" class="form-control"></td>
-                  <td><button onclick="deleteHomework()" class="btn btn-danger btn-sm">🗑</button></td>
-                  <td><button onclick="newHomework()" class="btn btn-success btn-sm">+</button></td>
-                </tr>
-              </table>
+              <div class="table-responsive">
+                <table class="w-100">
+                  <tr>
+                    <th>Feladat id</th>
+                    <th>Tantárgy</th>
+                    <th>Tanár</th>
+                    <th>Határidő</th>
+                    <th></th>
+                    <th></th>
+                  </tr>
+                  <tr>
+                    <td><select id="choice" onchange="refill()" class="form-select"></select></td>
+                    <td>
+                      <select id="new_lesson" class="form-select"></select>
+                    </td>
+                    <td>
+                      <select id="new_teacher" class="form-select"></select>
+                    </td>
+                    <td><input type="text" id="new_due" placeholder="YYYY-MM-DD hh:mm:ss" class="form-control"></td>
+                    <td><button onclick="deleteHomework()" class="btn btn-danger btn-sm">🗑</button></td>
+                    <td><button onclick="newHomework()" class="btn btn-success btn-sm">+</button></td>
+                  </tr>
+                </table>
+              </div>
             </div>
-          </div>
-
-            
-            
-            
 
             <div id="err"></div>
           </div>
@@ -75,12 +71,10 @@
             <div class="box-medium">
               <p class="h6">Feladat leírás</p>
               <hr>
-                
-
-                <textarea rows="10" cols="30" id="new_description"></textarea>
+              <textarea rows="10" cols="30" id="new_description"></textarea>
             </div>
           </div>
-          
+
         </div>
         <div class="col">
           <div class="box-smaller">
