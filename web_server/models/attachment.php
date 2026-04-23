@@ -71,7 +71,7 @@ class Attachment
         try {
             if ($db->logError($db->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
             return ($ret = $db->handleQueryResult($db->connection->execute_query(
-                'SELECT attachments.id, file_name FROM homework LEFT JOIN attachments on homework.id = homework_id WHERE homework.id = ?',
+                'SELECT attachments.id, file_name FROM attachments LEFT JOIN homework ON homework.id = homework_id WHERE homework.id = ?',
                 array($homework_id)
             ))) === null ? null : $ret;
         } catch (Exception) {

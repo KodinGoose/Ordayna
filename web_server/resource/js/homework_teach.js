@@ -232,6 +232,30 @@ async function newHomework() {
   await loadHomeworks();
 }
 
+async function deleteHomework() {
+  document.getElementById("err").innerHTML = `<span id="empty_err"></span>`;
+  const del_id =
+    typeof document.getElementById("choice").options[document.getElementById("choice").selectedIndex] === 'undefined' ?
+      (() => { document.getElementById("empty_err").innerHTML += "Válasszon ki egy elemet<br>"; return false; })() :
+      (document.getElementById("choice").options[document.getElementById("choice").selectedIndex].getAttribute("value") === "-1" ?
+        (() => { document.getElementById("empty_err").innerHTML += "Válasszon ki egy elemet<br>"; return false; })() :
+        document.getElementById("choice").options[document.getElementById("choice").selectedIndex].getAttribute("value"));
+  if (del_id === false) return;
+
+  const response = await fetch(url + "intezmeny/delete/homework", {
+    method: "DELETE",
+    body: JSON.stringify({
+      intezmeny_id: intezmeny_id,
+      homework_id: del_id,
+    })
+  });
+  if (response.ok !== true) {
+    document.getElementById("err").innerHTML = await response.text();
+    return;
+  }
+  await loadHomeworks();
+}
+
 await loadGroups();
 await loadHomeworks();
 await loadLessons();
@@ -242,3 +266,4 @@ window.updateHomeworks = updateHomeworks;
 window.refill = refill;
 window.refillEx = refillEx;
 window.newHomework = newHomework;
+window.deleteHomework = deleteHomework;

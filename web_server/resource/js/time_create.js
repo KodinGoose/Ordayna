@@ -217,6 +217,9 @@ async function lockData() {
     elem_id === false || start === false || duration === false || from === false || until === false ||
     group_id === false || lesson_id === false || teacher_id === false || room_id === false
   ) return;
+  if ((new Date(from)) > (new Date(until))) {
+    document.getElementById("from_err").innerHTML = "Az tanóra érvényességének a vége nem lehet az eleje elött<br>";
+    return;}
   if (elem_id === "-1") {
     const response = await fetch(url + "intezmeny/create/timetable_element", {
       method: "POST",
