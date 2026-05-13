@@ -2,6 +2,8 @@
 ## Linux
 ### Bare metal
 ***WARNING: This will replace the entire contents of /etc/nginx. If you deem this unacceptable use the docker setup.***  
+- Download the git repo in /var/www/ordayna
+  - The path to the config directory should look like the following: /var/www/ordayna/config/
 - Run config/setup.sh  
 - This will install all dependancies (including nginx, mariadb, php-fpm and composer) and configure nginx  
 - By default the web server is exposed on localhost:80 and localhost:443  
