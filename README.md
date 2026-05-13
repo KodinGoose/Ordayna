@@ -1,6 +1,7 @@
 # Setup
 ## Linux
 ### Bare metal
+***WARNING: Only debian based distros are supported.***  
 ***WARNING: This will replace the entire contents of /etc/nginx. If you deem this unacceptable use the docker setup.***  
 - Download the git repo in /var/www/ordayna
   - The path to the config directory should look like the following: /var/www/ordayna/config/
